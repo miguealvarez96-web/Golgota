@@ -1,17 +1,38 @@
 -- GÓLGOTA: catálogo aprobado, pagos transaccionales y vigencia por fechas.
 -- Preparada contra 20260912_init.sql. Requiere PostgreSQL >= 15.
--- NO ejecutada. Revisar las precondiciones antes de aplicar en la base real.
+-- Aplicar completa sobre el esquema inicial; para el estado parcial usar la reparación del 24/09.
 BEGIN;
 
 -- Evitar cambios concurrentes entre las comprobaciones y la instalación.
 LOCK TABLE public.planes, public.membresias IN ACCESS EXCLUSIVE MODE;
+
+-- Esta migración es para el esquema inicial, no para reanudar fragmentos.
+-- Para una base parcialmente migrada usar 20260924_repara_membresias_pagos.sql.
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'membresias' AND column_name = 'estado'
+  ) OR EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'membresias'
+      AND column_name IN ('estado_legacy', 'estado_pago')
+  ) THEN
+    RAISE EXCEPTION 'La migración original requiere el esquema inicial. Para el estado parcial usar 20260924_repara_membresias_pagos.sql completa.';
+  END IF;
+END;
+$$;
+
+-- Renombrar ANTES de inspeccionar valores históricos. Si una precondición falla,
+-- BEGIN/ROLLBACK conserva el esquema original; no ejecutar este archivo por partes.
+ALTER TABLE public.membresias RENAME COLUMN estado TO estado_legacy;
 
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM public.membresias WHERE abono <> 0) THEN
     RAISE EXCEPTION 'Hay abonos históricos sin detalle transaccional. Conciliar e importar su historial mediante una migración revisada antes de continuar.';
   END IF;
-  IF EXISTS (SELECT 1 FROM public.membresias WHERE estado = 'PAGADO' AND saldo > 0) THEN
+  IF EXISTS (SELECT 1 FROM public.membresias WHERE estado_legacy = 'PAGADO' AND saldo > 0) THEN
     RAISE EXCEPTION 'Hay membresías marcadas PAGADO con saldo pendiente. Conciliar antes de continuar.';
   END IF;
   IF EXISTS (
@@ -59,7 +80,6 @@ CREATE TYPE public.estado_pago_membresia_enum AS ENUM ('PENDIENTE', 'PAGADO', 'C
 
 -- Transición explícita: conservar el valor original bajo un nombre histórico,
 -- sin default ni permisos de escritura. Ventas y su enum permanecen intactos.
-ALTER TABLE public.membresias RENAME COLUMN estado TO estado_legacy;
 ALTER TABLE public.membresias
   ADD COLUMN estado_pago public.estado_pago_membresia_enum,
   ALTER COLUMN estado_legacy DROP DEFAULT;
@@ -228,7 +248,7 @@ BEGIN
     RAISE EXCEPTION 'No tiene permiso para sincronizar este pago.' USING ERRCODE = '42501';
   END IF;
   -- La fila ya está bloqueada por pagos_validar. El trigger de membresias deriva
-  -- saldo/estado y valida el total, incluso en INSERT de varios pagos a la vez.
+  -- saldo/estado_pago y valida el total, incluso en INSERT de varios pagos a la vez.
   UPDATE public.membresias
   SET abono = (SELECT COALESCE(sum(monto), 0) FROM public.pagos WHERE membresia_id = NEW.membresia_id)
   WHERE id = NEW.membresia_id;
