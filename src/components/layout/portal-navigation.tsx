@@ -2,15 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import PortalIcon, { type PortalIconName } from "./portal-icon";
 
-const sections = [
-  { title: "Dashboard", href: "/" },
-  { title: "Clientes", href: "/clientes" },
-  { title: "Membresías", href: "/membresias" },
-  { title: "Asistencia", href: "/asistencia" },
-  { title: "Productos", href: "/productos" },
-  { title: "Gastos", href: "/gastos" },
-  { title: "Reportes", href: "/reportes" },
+const sections: { title: string; href: string; icon: PortalIconName }[] = [
+  { title: "Dashboard", href: "/", icon: "dashboard" },
+  { title: "Clientes", href: "/clientes", icon: "clients" },
+  { title: "Membresías", href: "/membresias", icon: "membership" },
+  { title: "Asistencia", href: "/asistencia", icon: "attendance" },
+  { title: "Productos", href: "/productos", icon: "products" },
+  { title: "Gastos", href: "/gastos", icon: "expenses" },
+  { title: "Reportes", href: "/reportes", icon: "reports" },
 ];
 
 export default function PortalNavigation() {
@@ -18,11 +19,11 @@ export default function PortalNavigation() {
 
   return (
     <nav aria-label="Navegación del portal">
-      <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+      <p className="eyebrow mb-4 hidden px-3 lg:block">
         Portal
       </p>
       <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-1">
-        {sections.map(({ title, href }) => {
+        {sections.map(({ title, href, icon }) => {
           const active = pathname === href || (href !== "/" && pathname.startsWith(`${href}/`));
 
           return (
@@ -30,13 +31,13 @@ export default function PortalNavigation() {
               <Link
                 href={href}
                 aria-current={active ? "page" : undefined}
-                className={`flex min-h-12 items-center rounded-lg border px-3 py-3 text-sm transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${
+                className={`flex min-h-12 items-center gap-2.5 rounded-xl border px-3 py-3 text-sm transition-colors ${
                   active
-                    ? "border-amber-400 bg-amber-400 font-semibold text-zinc-950 hover:bg-amber-300"
-                    : "border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                    ? "border-brand-copper bg-brand-copper/20 font-semibold text-brand-text shadow-[inset_3px_0_0_#A7674E] hover:bg-brand-copper/30"
+                    : "border-transparent text-brand-secondary hover:border-brand-muted/30 hover:bg-brand-bg/50 hover:text-brand-text"
                 }`}
               >
-                {title}
+                <PortalIcon name={icon} />{title}
               </Link>
             </li>
           );

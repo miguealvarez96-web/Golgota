@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import LogoutButton from "@/components/layout/logout-button";
 import PortalNavigation from "@/components/layout/portal-navigation";
+import Brand from "@/components/layout/brand";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function AppLayout({
@@ -31,40 +32,30 @@ export default async function AppLayout({
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white">
-      <header className="border-b border-zinc-800 bg-zinc-900">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4">
-          <div>
-            <h1 className="text-xl font-bold">
-              Gólgota CF
-            </h1>
-
-            <p className="text-sm text-zinc-400">
-              Portal de administración
-            </p>
-          </div>
-
-          <div className="min-w-0 break-words sm:text-right">
-            <p className="text-sm font-medium">
-              {perfil.nombre}
-            </p>
-
-            <p className="text-xs uppercase text-zinc-400">
-              {perfil.rol}
-            </p>
-
+    <div className="min-h-screen bg-brand-bg text-brand-text">
+      <a href="#portal-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-brand-text focus:p-3 focus:text-brand-bg">Ir al contenido</a>
+      <header className="border-b border-brand-muted/30 bg-brand-surface">
+        <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-5 px-4 py-5 sm:px-8">
+          <Brand />
+          <div className="flex min-w-0 flex-wrap items-center gap-x-5 gap-y-3">
+            <div className="min-w-0 break-words sm:text-right">
+              <p className="text-sm font-medium">{perfil.nombre}</p>
+              <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-secondary">
+                {perfil.rol}
+              </p>
+            </div>
             <LogoutButton />
           </div>
         </div>
       </header>
 
-      <div className="mx-auto max-w-7xl lg:grid lg:grid-cols-[16rem_minmax(0,1fr)]">
-        <aside className="border-b border-zinc-800 bg-zinc-900/50 p-4 lg:border-b-0 lg:border-r">
-          <div className="lg:sticky lg:top-4">
+      <div className="mx-auto max-w-[1600px] lg:grid lg:min-h-[calc(100vh-100px)] lg:grid-cols-[15rem_minmax(0,1fr)]">
+        <aside className="border-b border-brand-muted/30 bg-brand-surface p-3 sm:p-5 lg:border-b-0 lg:border-r lg:pt-8">
+          <div className="lg:sticky lg:top-6">
             <PortalNavigation />
           </div>
         </aside>
-        <div className="min-w-0 break-words">{children}</div>
+        <div id="portal-content" tabIndex={-1} className="min-w-0 break-words">{children}</div>
       </div>
     </div>
   );

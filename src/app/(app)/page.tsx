@@ -15,7 +15,7 @@ export default async function HomePage() {
 
   if (perfilError || !perfil) {
     return (
-      <main className="p-6 text-white sm:p-8">
+      <main className="portal-page">
         <p role="alert" className="text-red-300">
           No fue posible determinar el panel disponible para este usuario.
         </p>
@@ -25,10 +25,10 @@ export default async function HomePage() {
 
   if (perfil.rol === "staff") {
     return (
-      <main className="p-6 text-white sm:p-8">
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6">
-          <h1 className="text-2xl font-bold">Panel operativo</h1>
-          <p className="mt-3 text-zinc-400">Panel en construcción</p>
+      <main className="portal-page">
+        <div className="panel p-6">
+          <h1 className="page-title">Panel operativo</h1>
+          <p className="mt-3 text-brand-secondary">Panel en construcción</p>
         </div>
       </main>
     );
@@ -43,9 +43,9 @@ export default async function HomePage() {
 
   if (error || !kpis) {
     return (
-      <main className="p-6 text-white sm:p-8">
-        <div className="rounded-2xl border border-red-900 bg-red-950/30 p-6">
-          <h1 className="text-2xl font-bold">Dashboard</h1>
+      <main className="portal-page">
+        <div className="panel border-red-400/40 p-6">
+          <h1 className="page-title">Dashboard</h1>
           <p role="alert" className="mt-3 text-red-300">
             No fue posible cargar los indicadores del Dashboard.
           </p>
@@ -68,17 +68,18 @@ export default async function HomePage() {
   ];
 
   return (
-    <main className="p-6 text-white sm:p-8">
-      <div className="mx-auto max-w-6xl">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+    <main className="portal-page">
+      <div>
+        <p className="eyebrow">Gólgota CF · Resumen</p>
+        <h1 className="page-title mt-2">Dashboard</h1>
+        <div className="mt-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {cards.map((card) => (
             <section
               key={card.label}
-              className="rounded-2xl border border-zinc-800 bg-zinc-900 p-5 shadow-sm"
+              className="panel relative min-w-0 overflow-hidden p-6 before:absolute before:inset-y-6 before:left-0 before:w-0.5 before:rounded-full before:bg-brand-copper"
             >
-              <h2 className="text-sm font-medium text-zinc-400">{card.label}</h2>
-              <p className="mt-3 text-3xl font-bold tracking-tight">{card.value}</p>
+              <h2 className="text-sm font-medium text-brand-secondary">{card.label}</h2>
+              <p className="mt-5 break-words text-3xl font-semibold tabular-nums tracking-tight">{card.value}</p>
             </section>
           ))}
         </div>

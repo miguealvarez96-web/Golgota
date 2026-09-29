@@ -98,14 +98,14 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-zinc-950 px-4">
-      <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900 p-8 shadow-xl">
+    <main className="flex min-h-screen items-center justify-center bg-[#06102B] px-4">
+      <div className="w-full max-w-md rounded-2xl border border-[#6B738A]/30 bg-[#0A1D4A] p-8 shadow-xl">
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-white">
+          <h1 className="text-3xl font-bold text-[#EBEFF4]">
             Gólgota CF
           </h1>
 
-          <p className="mt-2 text-sm text-zinc-400">
+          <p className="mt-2 text-sm text-[#999EAA]">
             Portal de administración
           </p>
         </div>
@@ -114,7 +114,7 @@ export default function LoginPage() {
           <div>
             <label
               htmlFor="email"
-              className="mb-2 block text-sm font-medium text-zinc-200"
+              className="mb-2 block text-sm font-medium text-[#EBEFF4]"
             >
               Correo electrónico
             </label>
@@ -127,14 +127,14 @@ export default function LoginPage() {
               autoComplete="email"
               placeholder="correo@ejemplo.com"
               required
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-4 py-3 text-white outline-none transition focus:border-zinc-500"
+              className="w-full rounded-lg border border-[#6B738A]/60 bg-[#06102B] px-4 py-3 text-[#EBEFF4] outline-none transition focus:border-[#B07050]"
             />
           </div>
 
           <div>
             <label
               htmlFor="password"
-              className="mb-2 block text-sm font-medium text-zinc-200"
+              className="mb-2 block text-sm font-medium text-[#EBEFF4]"
             >
               Contraseña
             </label>
@@ -147,7 +147,7 @@ export default function LoginPage() {
               autoComplete="current-password"
               placeholder="••••••••"
               required
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-4 py-3 text-white outline-none transition focus:border-zinc-500"
+              className="w-full rounded-lg border border-[#6B738A]/60 bg-[#06102B] px-4 py-3 text-[#EBEFF4] outline-none transition focus:border-[#B07050]"
             />
           </div>
 
@@ -156,7 +156,7 @@ export default function LoginPage() {
               type="button"
               onClick={handlePasswordRecovery}
               disabled={recoveryLoading}
-              className="text-sm text-zinc-400 underline transition hover:text-white disabled:opacity-60"
+              className="text-sm text-[#999EAA] underline transition hover:text-[#EBEFF4] disabled:opacity-60"
             >
               {recoveryLoading
                 ? "Enviando..."
@@ -179,7 +179,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-white px-4 py-3 font-semibold text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full rounded-lg bg-[#A7674E] px-4 py-3 font-semibold text-[#EBEFF4] transition hover:bg-[#B07050] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {loading
               ? "Iniciando sesión..."

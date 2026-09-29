@@ -3,21 +3,31 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #06102B;
+  --foreground: #EBEFF4;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  color-scheme: dark;
+}
+
+@layer base {
+  ::selection { background: #B07050; color: #06102B; }
+  :focus-visible { outline: 2px solid #EBEFF4; outline-offset: 4px; }
+}
+
+@layer components {
+  .portal-page { @apply mx-auto w-full max-w-7xl px-4 py-6 sm:p-8 lg:p-10; }
+  .panel { @apply rounded-2xl border border-brand-muted/30 bg-brand-surface shadow-[0_10px_32px_-20px_rgba(0,0,0,0.6)]; }
+  .page-title { @apply text-2xl font-semibold tracking-tight text-brand-text sm:text-3xl; }
+  .eyebrow { @apply text-xs font-semibold uppercase tracking-[0.18em] text-brand-secondary; }
+  .btn-primary { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-brand-copper bg-brand-copper/20 px-4 py-2.5 text-sm font-semibold text-brand-text transition-colors hover:border-brand-hover hover:bg-brand-hover hover:text-brand-bg disabled:cursor-wait disabled:opacity-60; }
+  .btn-secondary { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-brand-muted/60 bg-transparent px-4 py-2.5 text-sm font-medium text-brand-text transition-colors hover:border-brand-copper hover:bg-brand-copper/10 disabled:cursor-wait disabled:opacity-60; }
+  .field { @apply min-h-11 w-full rounded-xl border border-brand-muted/60 bg-brand-bg px-3 py-2.5 text-sm text-brand-text placeholder:text-brand-secondary focus:border-brand-hover focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-brand-hover disabled:opacity-60; }
+  .field-label { @apply mb-2 block text-sm font-medium text-brand-text; }
 }
 
 @layer utilities {
