@@ -3,30 +3,30 @@
 @tailwind utilities;
 
 :root {
-  --background: #06102B;
-  --foreground: #EBEFF4;
+  --background: #F6F8FB;
+  --foreground: #0A1D4A;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 @layer base {
-  ::selection { background: #B07050; color: #06102B; }
-  :focus-visible { outline: 2px solid #EBEFF4; outline-offset: 4px; }
+  ::selection { background: #A7674E; color: #FFFFFF; }
+  :focus-visible { outline: 2px solid #A7674E; outline-offset: 3px; }
 }
 
 @layer components {
-  .portal-page { @apply mx-auto w-full max-w-7xl px-4 py-6 sm:p-8 lg:p-10; }
-  .panel { @apply rounded-2xl border border-brand-muted/30 bg-brand-surface shadow-[0_10px_32px_-20px_rgba(0,0,0,0.6)]; }
+  .portal-page { @apply mx-auto w-full max-w-7xl px-4 py-7 sm:px-8 sm:py-9 lg:px-10 lg:py-11; }
+  .panel { @apply rounded-2xl border border-brand-border bg-brand-surface shadow-[0_8px_28px_-22px_rgba(10,29,74,0.22)]; }
   .page-title { @apply text-2xl font-semibold tracking-tight text-brand-text sm:text-3xl; }
-  .eyebrow { @apply text-xs font-semibold uppercase tracking-[0.18em] text-brand-secondary; }
-  .btn-primary { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-brand-copper bg-brand-copper/20 px-4 py-2.5 text-sm font-semibold text-brand-text transition-colors hover:border-brand-hover hover:bg-brand-hover hover:text-brand-bg disabled:cursor-wait disabled:opacity-60; }
-  .btn-secondary { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-brand-muted/60 bg-transparent px-4 py-2.5 text-sm font-medium text-brand-text transition-colors hover:border-brand-copper hover:bg-brand-copper/10 disabled:cursor-wait disabled:opacity-60; }
-  .field { @apply min-h-11 w-full rounded-xl border border-brand-muted/60 bg-brand-bg px-3 py-2.5 text-sm text-brand-text placeholder:text-brand-secondary focus:border-brand-hover focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-brand-hover disabled:opacity-60; }
+  .eyebrow { @apply text-xs font-semibold uppercase tracking-[0.16em] text-brand-secondary; }
+  .btn-primary { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-brand-text bg-brand-text px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:border-brand-hover hover:shadow-[0_4px_16px_-8px_rgba(167,103,78,0.65)] disabled:cursor-wait disabled:opacity-60; }
+  .btn-secondary { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-brand-border bg-white px-4 py-2.5 text-sm font-medium text-brand-text transition-colors hover:border-brand-copper hover:bg-brand-bg disabled:cursor-wait disabled:opacity-60; }
+  .field { @apply min-h-11 w-full rounded-xl border border-brand-border bg-white px-3 py-2.5 text-sm text-brand-text placeholder:text-brand-secondary focus:border-brand-copper focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-brand-copper disabled:opacity-60; }
   .field-label { @apply mb-2 block text-sm font-medium text-brand-text; }
 }
 

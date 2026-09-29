@@ -22,7 +22,7 @@ export default function PortalNavigation() {
       <p className="eyebrow mb-4 hidden px-3 lg:block">
         Portal
       </p>
-      <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-1">
+      <ul className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-1">
         {sections.map(({ title, href, icon }) => {
           const active = pathname === href || (href !== "/" && pathname.startsWith(`${href}/`));
 
@@ -31,10 +31,10 @@ export default function PortalNavigation() {
               <Link
                 href={href}
                 aria-current={active ? "page" : undefined}
-                className={`flex min-h-12 items-center gap-2.5 rounded-xl border px-3 py-3 text-sm transition-colors ${
+                className={`flex min-h-11 items-center gap-2.5 rounded-lg border px-3 py-2.5 text-sm transition-colors ${
                   active
-                    ? "border-brand-copper bg-brand-copper/20 font-semibold text-brand-text shadow-[inset_3px_0_0_#A7674E] hover:bg-brand-copper/30"
-                    : "border-transparent text-brand-secondary hover:border-brand-muted/30 hover:bg-brand-bg/50 hover:text-brand-text"
+                    ? "border-brand-copper/25 bg-brand-copper/10 font-semibold text-brand-text shadow-[inset_3px_0_0_#A7674E] hover:bg-brand-copper/15"
+                    : "border-transparent text-brand-secondary hover:border-brand-border hover:bg-brand-bg hover:text-brand-text"
                 }`}
               >
                 <PortalIcon name={icon} />{title}

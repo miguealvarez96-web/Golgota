@@ -49,14 +49,14 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#06102B] px-4">
-      <div className="w-full max-w-md rounded-2xl border border-[#6B738A]/30 bg-[#0A1D4A] p-8 shadow-xl">
+    <main className="flex min-h-screen items-center justify-center bg-brand-bg px-4 py-8">
+      <div className="panel w-full max-w-md p-7 sm:p-9">
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-[#EBEFF4]">
+          <h1 className="text-3xl font-bold text-brand-text">
             Gólgota CF
           </h1>
 
-          <p className="mt-2 text-sm text-[#999EAA]">
+          <p className="mt-2 text-sm text-brand-secondary">
             Crear nueva contraseña
           </p>
         </div>
@@ -65,7 +65,7 @@ export default function ResetPasswordPage() {
           <div>
             <label
               htmlFor="password"
-              className="mb-2 block text-sm font-medium text-[#EBEFF4]"
+              className="field-label"
             >
               Nueva contraseña
             </label>
@@ -77,14 +77,14 @@ export default function ResetPasswordPage() {
               onChange={(event) => setPassword(event.target.value)}
               autoComplete="new-password"
               required
-              className="w-full rounded-lg border border-[#6B738A]/60 bg-[#06102B] px-4 py-3 text-[#EBEFF4] outline-none focus:border-[#B07050]"
+              className="field min-h-12 px-4"
             />
           </div>
 
           <div>
             <label
               htmlFor="confirmPassword"
-              className="mb-2 block text-sm font-medium text-[#EBEFF4]"
+              className="field-label"
             >
               Confirmar contraseña
             </label>
@@ -96,12 +96,12 @@ export default function ResetPasswordPage() {
               onChange={(event) => setConfirmPassword(event.target.value)}
               autoComplete="new-password"
               required
-              className="w-full rounded-lg border border-[#6B738A]/60 bg-[#06102B] px-4 py-3 text-[#EBEFF4] outline-none focus:border-[#B07050]"
+              className="field min-h-12 px-4"
             />
           </div>
 
           {error && (
-            <div className="rounded-lg border border-red-900 bg-red-950/40 px-4 py-3 text-sm text-red-300">
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
               {error}
             </div>
           )}
@@ -109,7 +109,7 @@ export default function ResetPasswordPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-[#A7674E] px-4 py-3 font-semibold text-[#EBEFF4] transition hover:bg-[#B07050] disabled:cursor-not-allowed disabled:opacity-60"
+            className="btn-primary min-h-12 w-full"
           >
             {loading ? "Guardando..." : "Guardar contraseña"}
           </button>

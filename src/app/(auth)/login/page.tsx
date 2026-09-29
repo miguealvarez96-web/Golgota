@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import { z } from "zod";
 
+import Brand from "@/components/layout/brand";
 import { createClient } from "@/lib/supabase/client";
 
 const loginSchema = z.object({
@@ -108,23 +109,33 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#06102B] px-4">
-      <div className="w-full max-w-md rounded-2xl border border-[#6B738A]/30 bg-[#0A1D4A] p-8 shadow-xl">
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-[#EBEFF4]">
-            Gólgota CF
+    <main className="min-h-screen bg-brand-surface text-brand-text lg:grid lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+      <section className="relative flex flex-col justify-between overflow-hidden border-b border-brand-border bg-brand-bg px-6 py-8 sm:px-10 lg:min-h-screen lg:border-b-0 lg:border-r lg:px-12 lg:py-12 xl:px-16">
+        <div aria-hidden="true" className="pointer-events-none absolute -right-32 -top-52 h-[31rem] w-[31rem] rounded-full border-[3rem] border-brand-copper/[0.06] lg:-right-44 lg:top-1/4 lg:h-[42rem] lg:w-[42rem] lg:border-[5rem]" />
+        <Brand />
+        <div className="relative mt-10 max-w-xl lg:my-auto">
+          <div className="mb-5 h-1 w-12 rounded-full bg-brand-copper" />
+          <h1 className="text-2xl font-semibold leading-tight tracking-tight sm:text-3xl lg:text-5xl lg:leading-[1.1]">
+            Tu comunidad, en un solo lugar.
           </h1>
-
-          <p className="mt-2 text-sm text-[#999EAA]">
-            Portal de administración
+          <p className="mt-3 max-w-md text-sm leading-relaxed text-brand-secondary lg:mt-5 lg:text-base">
+            Gestiona Gólgota CF con claridad, desde cada cliente hasta el resumen de tu operación.
           </p>
         </div>
+        <p className="relative mt-10 hidden text-xs font-medium uppercase tracking-[0.18em] text-brand-secondary lg:block">Plataforma Gólgota CF</p>
+      </section>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+      <section className="flex items-center justify-center px-6 py-12 sm:px-10 lg:min-h-screen lg:py-16">
+        <div className="w-full max-w-[430px]">
+          <p className="eyebrow">Bienvenido</p>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight">Iniciar sesión</h2>
+          <p className="mt-3 text-sm text-brand-secondary">Ingresa con tu cuenta para acceder al portal.</p>
+
+        <form onSubmit={handleSubmit} className="mt-9 space-y-5">
           <div>
             <label
               htmlFor="email"
-              className="mb-2 block text-sm font-medium text-[#EBEFF4]"
+              className="field-label"
             >
               Correo electrónico
             </label>
@@ -137,14 +148,14 @@ export default function LoginPage() {
               autoComplete="email"
               placeholder="correo@ejemplo.com"
               required
-              className="w-full rounded-lg border border-[#6B738A]/60 bg-[#06102B] px-4 py-3 text-[#EBEFF4] outline-none transition focus:border-[#B07050]"
+              className="field min-h-12 px-4"
             />
           </div>
 
           <div>
             <label
               htmlFor="password"
-              className="mb-2 block text-sm font-medium text-[#EBEFF4]"
+              className="field-label"
             >
               Contraseña
             </label>
@@ -157,7 +168,7 @@ export default function LoginPage() {
               autoComplete="current-password"
               placeholder="••••••••"
               required
-              className="w-full rounded-lg border border-[#6B738A]/60 bg-[#06102B] px-4 py-3 text-[#EBEFF4] outline-none transition focus:border-[#B07050]"
+              className="field min-h-12 px-4"
             />
           </div>
 
@@ -166,7 +177,7 @@ export default function LoginPage() {
               type="button"
               onClick={handlePasswordRecovery}
               disabled={recoveryLoading}
-              className="text-sm text-[#999EAA] underline transition hover:text-[#EBEFF4] disabled:opacity-60"
+              className="text-sm font-medium text-brand-text underline decoration-brand-copper/50 underline-offset-4 transition hover:text-brand-copper disabled:opacity-60"
             >
               {recoveryLoading
                 ? "Enviando..."
@@ -175,13 +186,13 @@ export default function LoginPage() {
           </div>
 
           {error && (
-            <div className="rounded-lg border border-red-900 bg-red-950/40 px-4 py-3 text-sm text-red-300">
+            <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
               {error}
             </div>
           )}
 
           {message && (
-            <div className="rounded-lg border border-emerald-900 bg-emerald-950/40 px-4 py-3 text-sm text-emerald-300">
+            <div role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
               {message}
             </div>
           )}
@@ -189,14 +200,15 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-[#A7674E] px-4 py-3 font-semibold text-[#EBEFF4] transition hover:bg-[#B07050] disabled:cursor-not-allowed disabled:opacity-60"
+            className="btn-primary min-h-12 w-full"
           >
             {loading
               ? "Iniciando sesión..."
               : "Iniciar sesión"}
           </button>
         </form>
-      </div>
+        </div>
+      </section>
     </main>
   );
 }

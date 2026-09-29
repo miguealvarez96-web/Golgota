@@ -41,7 +41,7 @@ export default function LogoutButton() {
         {isLoading ? "Cerrando sesión..." : "Cerrar sesión"}
       </button>
       {error && (
-        <p role="alert" className="mt-2 max-w-xs text-sm text-red-400">
+        <p role="alert" className="mt-2 max-w-xs text-sm text-red-700">
           {error}
         </p>
       )}

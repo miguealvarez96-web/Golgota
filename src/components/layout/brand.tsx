@@ -9,7 +9,7 @@ export default function Brand() {
 
   return (
     <div className="flex min-w-0 items-center gap-3">
-      <div aria-hidden="true" className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-brand-copper/60 bg-brand-bg">
+      <div aria-hidden="true" className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-brand-copper/30 bg-brand-copper/10">
         {!logoLoaded && <span className="text-2xl font-black italic text-brand-copper">G</span>}
         {!logoFailed && (
           <Image src="/golgota-logo.png" alt="" width={44} height={44} unoptimized

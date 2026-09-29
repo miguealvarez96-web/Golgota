@@ -10,13 +10,14 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          bg: "#06102B",
-          surface: "#0A1D4A",
+          bg: "#F6F8FB",
+          surface: "#FFFFFF",
           copper: "#A7674E",
           hover: "#B07050",
-          text: "#EBEFF4",
-          secondary: "#999EAA",
+          text: "#0A1D4A",
+          secondary: "#6B738A",
           muted: "#6B738A",
+          border: "#E2E7EF",
         },
         background: "var(--background)",
         foreground: "var(--foreground)",
