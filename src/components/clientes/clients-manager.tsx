@@ -73,7 +73,7 @@ export default function ClientsManager({ clients, total, page, pageSize, query, 
         )}
       </div>
       {(pages > 1 || page > 1) && <nav aria-label="Páginas de clientes" className="mt-6 flex flex-wrap items-center justify-between gap-3 text-sm"><span className="text-brand-secondary">Página {page} de {pages} · {pageSize} por página</span><div className="flex gap-2">{page > 1 && <Link className="btn-secondary" href={pageUrl(page - 1)}>Anterior</Link>}{page < pages && <Link className="btn-secondary" href={pageUrl(page + 1)}>Siguiente</Link>}</div></nav>}
-      {form && <ClientForm client={form.client} onClose={close} onSaved={(notice) => { close(); setMessage(notice); startTransition(() => router.refresh()); }} />}
+      {form && <ClientForm client={form.client} membership={form.client ? memberships[form.client.id] : undefined} onClose={close} onSaved={(notice) => { close(); setMessage(notice); startTransition(() => router.refresh()); }} />}
     </main>
   );
 }

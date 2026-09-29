@@ -1,11 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { saveClient } from "@/app/(app)/clientes/actions";
-import { businessDate, clientSchema, clientStates, type ClientInput, type ClientRow } from "@/lib/clientes/model";
+import { businessDate, clientSchema, clientStates, type ClientInput, type ClientRow, type MembershipSummary } from "@/lib/clientes/model";
 
-export default function ClientForm({ client, onClose, onSaved }: {
-  client: ClientRow | null; onClose: () => void; onSaved: (message: string) => void;
+export default function ClientForm({ client, membership, onClose, onSaved }: {
+  client: ClientRow | null; membership?: MembershipSummary; onClose: () => void; onSaved: (message: string) => void;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const busy = useRef(false);
@@ -66,6 +67,11 @@ export default function ClientForm({ client, onClose, onSaved }: {
             <input id="fecha_registro" name="fecha_registro" type="date" required className="field" max={businessDate()} defaultValue={client?.fecha_registro ?? businessDate()} aria-invalid={Boolean(errors.fecha_registro)} aria-describedby={errors.fecha_registro ? "fecha_registro-error" : undefined} />{fieldError("fecha_registro")}</div>
         </fieldset>
         <p className="mt-5 text-xs leading-relaxed text-brand-secondary">Para retirar a un cliente de la operación, cambia su estado a Inactivo. Su historial se conserva.</p>
+        {client && <div className="mt-5 flex flex-wrap gap-2 border-t border-brand-border pt-5 text-sm">
+          <Link className="btn-secondary" href={`/membresias/nueva?cliente=${client.id}`}>Crear membresía</Link>
+          {membership && <Link className="btn-secondary" href={`/membresias/nueva?cliente=${client.id}&desde=${membership.id}`}>Renovar</Link>}
+          <Link className="btn-secondary" href={`/membresias?cliente=${client.id}`}>Ver historial</Link>
+        </div>}
         <div className="mt-6 flex flex-wrap justify-end gap-3 border-t border-brand-border pt-5">
           <button type="button" className="btn-secondary" disabled={pending} onClick={onClose}>Cancelar</button>
           <button type="submit" className="btn-primary" disabled={pending} aria-busy={pending}>{pending ? "Guardando…" : client ? "Guardar cambios" : "Crear cliente"}</button>

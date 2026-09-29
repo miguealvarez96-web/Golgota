@@ -29,7 +29,7 @@ export type ClientRow = {
   celular: string | null; email: string | null;
   estado_cliente: ClientState | null; fecha_registro: string;
 };
-export type MembershipSummary = { estado_vigencia: string; fecha_fin: string };
+export type MembershipSummary = { id: string; estado_vigencia: string; fecha_fin: string };
 export type SaveClientResult = { ok: true; message: string } | {
   ok: false; message: string; errors?: Partial<Record<keyof ClientInput, string[]>>;
 };

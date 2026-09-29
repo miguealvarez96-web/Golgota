@@ -29,7 +29,7 @@ export default async function ClientesPage({ searchParams }: {
       // Staff nunca consulta esta vista ni recibe datos de membresías/pagos.
       // No se seleccionan importes ni estado de deuda para el listado.
       const current = await access.supabase.from("v_membresias_estado")
-        .select("cliente_id,estado_vigencia,fecha_fin", { count: "exact" })
+        .select("id,cliente_id,estado_vigencia,fecha_fin", { count: "exact" })
         .in("cliente_id", data.map((client) => client.id))
         .neq("estado_pago", "CANCELADA")
         .in("estado_vigencia", ["VIGENTE", "POR_VENCER", "VENCE_HOY"])
@@ -37,7 +37,7 @@ export default async function ClientesPage({ searchParams }: {
       membershipError = Boolean(current.error) || current.count === null || current.count !== current.data?.length;
       if (!membershipError) {
         for (const membership of current.data ?? []) {
-          memberships[membership.cliente_id] ??= { estado_vigencia: membership.estado_vigencia, fecha_fin: membership.fecha_fin };
+          memberships[membership.cliente_id] ??= { id: membership.id, estado_vigencia: membership.estado_vigencia, fecha_fin: membership.fecha_fin };
         }
       }
     }
