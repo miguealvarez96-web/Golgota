@@ -70,7 +70,7 @@ export default function ClientForm({ client, membership, onClose, onSaved }: {
         {client && <div className="mt-5 flex flex-wrap gap-2 border-t border-brand-border pt-5 text-sm">
           <Link className="btn-secondary" href={`/membresias/nueva?cliente=${client.id}`}>Crear membresía</Link>
           {membership && <Link className="btn-secondary" href={`/membresias/nueva?cliente=${client.id}&desde=${membership.id}`}>Renovar</Link>}
-          <Link className="btn-secondary" href={`/membresias?cliente=${client.id}`}>Ver historial</Link>
+          <Link className="btn-secondary" href={`/membresias/cliente/${client.id}`}>Ver historial</Link>
         </div>}
         <div className="mt-6 flex flex-wrap justify-end gap-3 border-t border-brand-border pt-5">
           <button type="button" className="btn-secondary" disabled={pending} onClick={onClose}>Cancelar</button>

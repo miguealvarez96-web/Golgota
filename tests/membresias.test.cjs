@@ -84,7 +84,7 @@ test('fallos de RPC no filtran errores internos ni anuncian éxito', async () =>
   assert.equal(h.refreshed.length, 0);
 });
 
-test('la página de staff consulta solo la proyección sin importes', async () => {
+test('la carga de staff consulta solo la proyección sin importes', async () => {
   const tables = [];
   const supabase = { from(table) {
     tables.push(table);
@@ -96,14 +96,87 @@ test('la página de staff consulta solo la proyección sin importes', async () =
       async in() { return { data: [{ id, nombre_completo: 'Alumno de prueba' }], error: null }; } };
     throw Error(`Consulta financiera de staff: ${table}`);
   } };
-  const { default: Page } = load('src/app/(app)/membresias/page.tsx', {
+  const data = load('src/lib/membresias/data.ts', { 'server-only': {} });
+  const rows = await data.loadOperationalMemberships(supabase);
+  const clients = await data.loadClientIdentities(supabase, [id]);
+  assert.deepEqual(tables, ['v_membresias_verificacion', 'clientes']);
+  assert.equal(clients.get(id).nombre_completo, 'Alumno de prueba');
+  assert.equal(Object.hasOwn(rows[0], 'saldo'), false);
+});
+
+const grouping = load('src/lib/membresias/grouping.ts');
+function member(cliente_id, id, estado_vigencia, fecha_fin, extra = {}) {
+  return { cliente_id, id, estado_vigencia, fecha_fin, fecha_inicio: '2026-10-01',
+    plan_id: otherId, saldo: 0, estado_pago: 'PAGADO', ...extra };
+}
+
+test('agrupa una sola vez por cliente y elige la vigencia actual frente a una futura', () => {
+  const rows = [
+    member(id, 'anterior', 'VENCIDA', '2026-09-30'),
+    member(id, 'actual', 'POR_VENCER', '2026-10-30'),
+    member(id, 'futura', null, '2026-11-30'),
+  ];
+  const clients = new Map([[id, { id, nombre_completo: 'Alumno', cedula: '001' }]]);
+  const groups = grouping.groupByClient(rows, clients);
+  assert.equal(groups.length, 1);
+  assert.equal(groups[0].memberships.length, 3);
+  assert.equal(groups[0].overview.id, 'actual');
+});
+
+test('sin vigencia actual señala la última vencida; una futura sola aparece POR INICIAR', () => {
+  const expired = member(id, 'vencida', 'VENCIDA', '2026-09-30');
+  const future = member(id, 'futura', null, '2026-11-30');
+  assert.equal(grouping.chooseOverview([expired, future]).id, 'vencida');
+  assert.equal(grouping.chooseOverview([expired]).id, 'vencida');
+  assert.equal(grouping.chooseOverview([future]).id, 'futura');
+  assert.equal(grouping.chooseOverview([{ ...expired, estado_pago: 'CANCELADA' }]), null);
+});
+
+test('ordena clientes por VENCIDA, VENCE HOY, POR VENCER, VIGENTE y POR INICIAR', () => {
+  const states = [null, 'VIGENTE', 'POR_VENCER', 'VENCE_HOY', 'VENCIDA'];
+  const rows = states.map((state, index) => member(String(index), String(index), state, '2026-10-30'));
+  const clients = new Map(states.map((_, index) => [String(index), { id: String(index), nombre_completo: String(index), cedula: String(index) }]));
+  const ordered = grouping.groupByClient(rows, clients).map((group) => grouping.vigencyOf(group.overview));
+  assert.deepEqual(ordered, ['VENCIDA', 'VENCE_HOY', 'POR_VENCER', 'VIGENTE', 'POR_INICIAR']);
+});
+
+test('filtra por nombre o cédula y por estado del resumen, sin exponer finanzas a staff', () => {
+  const rows = [member(id, 'a', 'VENCE_HOY', '2026-10-30', { saldo: 5, estado_pago: 'PENDIENTE' }),
+    member(otherId, 'b', 'VENCIDA', '2026-09-30')];
+  const clients = new Map([[id, { id, nombre_completo: 'José', cedula: '001234' }],
+    [otherId, { id: otherId, nombre_completo: 'Ana', cedula: '009876' }]]);
+  const groups = grouping.groupByClient(rows, clients);
+  assert.equal(grouping.filterClientGroups(groups, 'jose', 'vigentes').length, 1);
+  assert.equal(grouping.filterClientGroups(groups, '009876', 'vencidas').length, 1);
+  assert.equal(grouping.filterClientGroups(groups, '', 'por_vencer').length, 0);
+  assert.equal(grouping.filterClientGroups(groups, '', 'saldo_pendiente').length, 1);
+  assert.equal(grouping.filterClientGroups(groups, '', 'pagadas').length, 1);
+});
+
+test('el historial de staff no consulta membresías financieras ni pagos', async () => {
+  const calls = [];
+  const supabase = { from(table) {
+    calls.push(table);
+    assert.equal(table, 'clientes');
+    return { select() { return this; }, eq() { return this; },
+      async maybeSingle() { return { data: { id, nombre_completo: 'Alumno', cedula: '001' }, error: null }; } };
+  } };
+  const { default: Page } = load('src/app/(app)/membresias/cliente/[id]/page.tsx', {
+    '@/components/membresias/vigency-badge': () => null,
     '@/lib/clientes/access': { async getClientAccess() { return { role: 'staff', supabase }; } },
     '@/lib/membresias/model': model,
+    '@/lib/membresias/grouping': grouping,
+    '@/lib/membresias/data': {
+      async loadOperationalMemberships(_db, clientId) { assert.equal(clientId, id); calls.push('v_membresias_verificacion'); return []; },
+      async loadFinancialMemberships() { throw Error('staff finance query'); },
+      async loadMembershipPayments() { throw Error('staff payment query'); },
+      async loadPlanNames() { throw Error('staff price query'); },
+    },
   });
-  const rendered = await Page({ searchParams: {} });
-  assert.deepEqual(tables, ['v_membresias_verificacion', 'clientes']);
-  assert.equal(rendered.props.rows[0].cliente, 'Alumno de prueba');
-  assert.equal(Object.hasOwn(rendered.props.rows[0], 'saldo'), false);
+  const rendered = await Page({ params: { id } });
+  assert.deepEqual(calls, ['clientes', 'v_membresias_verificacion']);
+  assert.equal(rendered.props.staff, true);
+  assert.deepEqual(rendered.props.rows, []);
 });
 
 const october = { fecha_inicio: '2026-10-01', fecha_fin: '2026-10-30', estado_pago: 'PENDIENTE' };

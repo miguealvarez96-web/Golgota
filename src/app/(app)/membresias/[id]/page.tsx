@@ -29,7 +29,7 @@ export default async function MembershipDetail({ params, searchParams }: {
   const payments = (history.data ?? []) as PaymentRow[];
   const pages = Math.max(1, Math.ceil(history.count / pageSize));
   return <main className="portal-page">
-    <Link href="/membresias" className="text-sm text-brand-secondary underline underline-offset-4">← Membresías</Link>
+    <Link href={`/membresias/cliente/${item.cliente_id}`} className="text-sm text-brand-secondary underline underline-offset-4">← Historial del cliente</Link>
     <div className="mt-4 flex flex-wrap items-start justify-between gap-4"><div><p className="eyebrow">Detalle de membresía</p><h1 className="page-title mt-2">{client.data?.nombre_completo ?? "Cliente"}</h1><p className="mt-2 text-sm text-brand-secondary">{plan.data?.nombre ?? "Plan"} · {client.data?.cedula}</p></div><Link href={`/membresias/nueva?cliente=${item.cliente_id}&desde=${item.id}`} className="btn-secondary">Renovar membresía</Link></div>
     {searchParams.creada === "1" && <p role="status" className="mt-5 rounded-xl border border-brand-copper/40 bg-brand-copper/10 p-4 text-sm">Membresía creada correctamente.</p>}
     <dl className="panel mt-6 grid gap-5 p-5 text-sm sm:grid-cols-2 lg:grid-cols-4"><Metric label="Inicio" value={displayDate(item.fecha_inicio)} /><Metric label="Vencimiento" value={displayDate(item.fecha_fin)} /><Metric label="Vigencia" value={item.estado_vigencia?.replaceAll("_", " ") ?? "Por iniciar"} /><Metric label="Pago" value={item.estado_pago} /><Metric label="Valor" value={moneyLabel(item.valor)} /><Metric label="Abonado" value={moneyLabel(item.total_abonado)} /><Metric label="Saldo" value={moneyLabel(item.saldo)} /></dl>
