@@ -47,16 +47,15 @@ export async function middleware(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
 
-    return NextResponse.redirect(url);
+    const redirectResponse = NextResponse.redirect(url);
+    response.cookies.getAll().forEach((cookie) => {
+      redirectResponse.cookies.set(cookie);
+    });
+    return redirectResponse;
   }
 
-  if (user && pathname === "/login") {
-    const url = request.nextUrl.clone();
-    url.pathname = "/";
-
-    return NextResponse.redirect(url);
-  }
-
+  // El login navega tras autenticarse. Dejarlo público evita un ciclo cuando
+  // el layout rechaza un perfil ausente, inactivo o que no se pudo consultar.
   return response;
 }
 

@@ -1,7 +1,6 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
 import { z } from "zod";
 
 import { createClient } from "@/lib/supabase/client";
@@ -14,7 +13,6 @@ const loginSchema = z.object({
 });
 
 export default function LoginPage() {
-  const router = useRouter();
   const supabase = createClient();
 
   const [email, setEmail] = useState("");
@@ -44,20 +42,32 @@ export default function LoginPage() {
 
     setLoading(true);
 
-    const { error: loginError } =
-      await supabase.auth.signInWithPassword({
+    try {
+      const { data, error: loginError } = await supabase.auth.signInWithPassword({
         email: validation.data.email,
         password: validation.data.password,
       });
 
-    if (loginError) {
-      setError("Correo o contraseña incorrectos.");
-      setLoading(false);
-      return;
-    }
+      if (loginError) {
+        setError(loginError.code === "invalid_credentials"
+          ? "Correo o contraseña incorrectos."
+          : "No fue posible iniciar sesión. Comprueba tu conexión e inténtalo de nuevo.");
+        return;
+      }
 
-    router.push("/");
-    router.refresh();
+      if (!data.session || !data.user) {
+        setError("No fue posible confirmar la sesión. Inténtalo de nuevo.");
+        return;
+      }
+
+      // El SDK ya persistió las cookies. Una navegación completa permite que
+      // middleware y layout lean la nueva sesión sin reutilizar el router cache.
+      window.location.replace("/");
+    } catch {
+      setError("No fue posible iniciar sesión. Comprueba tu conexión e inténtalo de nuevo.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handlePasswordRecovery() {
