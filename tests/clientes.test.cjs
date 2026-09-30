@@ -113,8 +113,15 @@ test('staff puede crear; autor real asignado en servidor y listas refrescadas', 
 
 test('staff no puede editar aunque invoque directamente la acción', async () => {
   const h = actionHarness({ role: 'staff' });
-  assert.equal((await h.saveClient(id, valid)).ok, false);
+  assert.equal((await h.saveClient(id, { ...valid, estado_cliente: 'Inactivo' })).ok, false);
   assert.equal(h.writes.length, 0);
+});
+
+test('owner puede crear cliente mediante la acción de servidor', async () => {
+  const h = actionHarness({ role: 'owner' });
+  assert.equal((await h.saveClient(null, valid)).ok, true);
+  assert.deepEqual(h.writes.map((write) => write.operation), ['insert']);
+  assert.equal(h.writes[0].data.created_by, id);
 });
 
 test('admin y owner pueden editar e inactivar sin borrar historial', async () => {

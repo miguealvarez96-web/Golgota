@@ -62,9 +62,24 @@ test('owner crea mediante la RPC con fecha Ecuador, nunca INSERT directo', async
 
 test('staff no ejecuta crear_membresia ni registrar_pago', async () => {
   const h = harness('staff');
-  assert.equal((await h.createMembership(input)).ok, false);
+  assert.equal((await h.createMembership({ ...input, abono_inicial: '4', metodo_pago: 'Efectivo' })).ok, false);
   assert.equal((await h.registerPayment({ membresia_id: id, monto: '1', metodo_pago: 'Efectivo', fecha_pago: '2026-09-29' })).ok, false);
   assert.equal(h.calls.length, 0);
+});
+
+test('staff no puede abrir directamente las páginas financieras de membresías', async () => {
+  const access = { role: 'staff', supabase: { from() { throw Error('consulta financiera'); } } };
+  const mocks = {
+    '@/lib/clientes/access': { async getClientAccess() { return access; } },
+    '@/lib/clientes/model': clientsModel,
+    '@/lib/membresias/model': model,
+    '@/components/membresias/payment-form': () => null,
+    '@/components/membresias/membership-form': () => null,
+  };
+  const detail = load('src/app/(app)/membresias/[id]/page.tsx', mocks).default;
+  const create = load('src/app/(app)/membresias/nueva/page.tsx', mocks).default;
+  assert.match((await detail({ params: { id }, searchParams: {} })).props.text, /permiso/);
+  assert.match((await create({ searchParams: { cliente: id } })).props.text, /permiso/);
 });
 
 test('pago parcial se envía por RPC; montos inválidos no generan llamada', async () => {
@@ -102,6 +117,104 @@ test('la carga de staff consulta solo la proyección sin importes', async () => 
   assert.deepEqual(tables, ['v_membresias_verificacion', 'clientes']);
   assert.equal(clients.get(id).nombre_completo, 'Alumno de prueba');
   assert.equal(Object.hasOwn(rows[0], 'saldo'), false);
+});
+
+test('la página de membresías de staff ignora filtros financieros y no carga importes', async () => {
+  const calls = [];
+  const operational = [{ cliente_id: id, plan: 'DIARIO', fecha_fin: '2026-09-30', estado_vigencia: 'VENCE_HOY' }];
+  const grouping = load('src/lib/membresias/grouping.ts');
+  const { default: Page } = load('src/app/(app)/membresias/page.tsx', {
+    '@/components/membresias/vigency-badge': () => null,
+    '@/lib/clientes/access': { async getClientAccess() { return { role: 'staff', supabase: {} }; } },
+    '@/lib/membresias/model': model,
+    '@/lib/membresias/grouping': grouping,
+    '@/lib/membresias/data': {
+      async loadOperationalMemberships() { calls.push('operativa'); return operational; },
+      async loadClientIdentities() { calls.push('clientes'); return new Map([[id, { id, nombre_completo: 'Alumno', cedula: '001' }]]); },
+      async loadFinancialMemberships() { throw Error('consulta financiera'); },
+      async loadPlanNames() { throw Error('consulta de precios'); },
+    },
+  });
+  const page = await Page({ searchParams: { filtro: 'saldo_pendiente' } });
+  assert.deepEqual(calls, ['operativa', 'clientes']);
+  assert.equal(page.props.staff, true);
+  assert.equal(page.props.filter, '');
+  assert.equal(Object.hasOwn(page.props.groups[0].overview, 'saldo'), false);
+});
+
+test('owner carga membresías financieras e historial de pagos', async () => {
+  const calls = [];
+  const financial = [{ id: otherId, cliente_id: id, plan_id: otherId, fecha_inicio: '2026-09-01',
+    fecha_fin: '2026-09-30', estado_vigencia: 'VENCE_HOY', estado_pago: 'PENDIENTE', saldo: 5 }];
+  const data = {
+    async loadFinancialMemberships(_db, clientId) { calls.push('financieras'); assert.equal(clientId, undefined); return financial; },
+    async loadClientIdentities() { calls.push('clientes'); return new Map([[id, { id, nombre_completo: 'Alumno', cedula: '001' }]]); },
+    async loadPlanNames() { calls.push('planes'); return new Map([[otherId, 'MENSUAL']]); },
+    async loadOperationalMemberships() { throw Error('owner no debe recibir proyección reducida'); },
+  };
+  const { default: ListPage } = load('src/app/(app)/membresias/page.tsx', {
+    '@/components/membresias/vigency-badge': () => null,
+    '@/lib/clientes/access': { async getClientAccess() { return { role: 'owner', supabase: {} }; } },
+    '@/lib/membresias/model': model,
+    '@/lib/membresias/grouping': grouping,
+    '@/lib/membresias/data': data,
+  });
+  const list = await ListPage({ searchParams: { filtro: 'saldo_pendiente' } });
+  assert.equal(list.props.staff, false);
+  assert.equal(list.props.filter, 'saldo_pendiente');
+  assert.equal(list.props.groups[0].overview.saldo, 5);
+  assert.deepEqual(calls, ['financieras', 'clientes', 'planes']);
+
+  const supabase = { from(table) {
+    assert.equal(table, 'clientes');
+    return { select() { return this; }, eq() { return this; }, async maybeSingle() {
+      return { data: { id, nombre_completo: 'Alumno', cedula: '001' }, error: null };
+    } };
+  } };
+  const { default: HistoryPage } = load('src/app/(app)/membresias/cliente/[id]/page.tsx', {
+    '@/components/membresias/vigency-badge': () => null,
+    '@/lib/clientes/access': { async getClientAccess() { return { role: 'owner', supabase }; } },
+    '@/lib/membresias/model': model,
+    '@/lib/membresias/grouping': grouping,
+    '@/lib/membresias/data': {
+      async loadFinancialMemberships() { calls.push('historial financiero'); return financial; },
+      async loadPlanNames() { calls.push('historial planes'); return new Map([[otherId, 'MENSUAL']]); },
+      async loadMembershipPayments() { calls.push('pagos'); return new Map([[otherId, [{ id: 'pago', monto: 5, fecha_pago: '2026-09-30', metodo_pago: 'Efectivo' }]]]); },
+      async loadOperationalMemberships() { throw Error('owner no debe recibir proyección reducida'); },
+    },
+  });
+  const history = await HistoryPage({ params: { id } });
+  assert.equal(history.props.staff, false);
+  assert.equal(history.props.payments.get(otherId)[0].monto, 5);
+  assert.deepEqual(calls.slice(3), ['historial financiero', 'historial planes', 'pagos']);
+});
+
+test('Dashboard consulta cinco KPI solo para admin y owner; staff no consulta finanzas', async () => {
+  const kpis = { clientes_activos: 1, membresias_vigentes: 2, membresias_por_vencer: 3, ingresos_mes: 4, pagos_pendientes: 5 };
+  for (const role of ['admin', 'owner', 'staff', 'otro']) {
+    const calls = [];
+    const supabase = {
+      auth: { async getUser() { return { data: { user: { id } } }; } },
+      from(table) {
+        calls.push(table);
+        if (table === 'usuarios') return { select() { return this; }, eq() { return this; }, async single() { return { data: { rol: role }, error: null }; } };
+        if (table === 'v_dashboard_kpis') return { select() { return this; }, async single() { return { data: kpis, error: null }; } };
+        throw Error(`tabla inesperada: ${table}`);
+      },
+    };
+    const { default: Page } = load('src/app/(app)/page.tsx', {
+      '@/lib/supabase/server': { createClient() { return supabase; } },
+    });
+    const rendered = JSON.stringify(await Page());
+    assert.deepEqual(calls, role === 'admin' || role === 'owner' ? ['usuarios', 'v_dashboard_kpis'] : ['usuarios']);
+    if (role === 'admin' || role === 'owner') {
+      for (const label of ['Clientes activos', 'Membresías vigentes', 'Membresías por vencer', 'Ingresos del mes', 'Pagos pendientes']) {
+        assert.ok(rendered.includes(label), `${role}: falta ${label}`);
+      }
+    } else {
+      assert.doesNotMatch(rendered, /Ingresos del mes|Pagos pendientes/);
+    }
+  }
 });
 
 const grouping = load('src/lib/membresias/grouping.ts');
@@ -167,7 +280,7 @@ test('el historial de staff no consulta membresías financieras ni pagos', async
     '@/lib/membresias/model': model,
     '@/lib/membresias/grouping': grouping,
     '@/lib/membresias/data': {
-      async loadOperationalMemberships(_db, clientId) { assert.equal(clientId, id); calls.push('v_membresias_verificacion'); return []; },
+      async loadOperationalMemberships(_db, clientId) { assert.equal(clientId, id); calls.push('v_membresias_verificacion'); return [{ cliente_id: id, plan: 'MENSUAL', fecha_fin: '2026-09-30', estado_vigencia: 'VENCE_HOY' }]; },
       async loadFinancialMemberships() { throw Error('staff finance query'); },
       async loadMembershipPayments() { throw Error('staff payment query'); },
       async loadPlanNames() { throw Error('staff price query'); },
@@ -176,7 +289,9 @@ test('el historial de staff no consulta membresías financieras ni pagos', async
   const rendered = await Page({ params: { id } });
   assert.deepEqual(calls, ['clientes', 'v_membresias_verificacion']);
   assert.equal(rendered.props.staff, true);
-  assert.deepEqual(rendered.props.rows, []);
+  assert.equal(rendered.props.rows[0].plan, 'MENSUAL');
+  assert.equal(Object.hasOwn(rendered.props.rows[0], 'saldo'), false);
+  assert.equal(rendered.props.payments.size, 0);
 });
 
 const october = { fecha_inicio: '2026-10-01', fecha_fin: '2026-10-30', estado_pago: 'PENDIENTE' };

@@ -13,7 +13,7 @@ export default async function HomePage() {
     .eq("id", user?.id ?? "")
     .single();
 
-  if (perfilError || !perfil) {
+  if (perfilError || !perfil || !["admin", "owner", "staff"].includes(perfil.rol)) {
     return (
       <main className="portal-page">
         <p role="alert" className="text-red-700">
