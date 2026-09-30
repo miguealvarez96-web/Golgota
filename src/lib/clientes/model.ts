@@ -10,14 +10,27 @@ export function businessDate(now = new Date()) {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Guayaquil", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
 }
 
+const namePattern = /^[A-ZÁÉÍÓÚÜÑ]+(?:[ '’-][A-ZÁÉÍÓÚÜÑ]+)*$/;
+export function normalizeClientName(value: string) {
+  return value.replace(/\u00a0/g, " ").replace(/[ \t\r\n\f\v]+/g, " ").trim().toLocaleUpperCase("es-EC");
+}
+export function normalizeClientPhone(value: string) {
+  const raw = value.replace(/\u00a0/g, " ").trim();
+  return raw ? raw.replace(/[ \t\r\n\f\v()-]/g, "") : null;
+}
+
 export const clientSchema = z.object({
-  nombre_completo: z.string().trim().min(2, "Ingresa al menos 2 caracteres.").max(255, "Máximo 255 caracteres."),
-  cedula: z.string().trim().regex(/^\d{1,20}$/, "Usa únicamente números, hasta 20 dígitos."),
-  celular: z.string().trim().max(20, "Máximo 20 caracteres.")
-    .refine((value) => !value || (/^[+\d\s().-]+$/.test(value) && value.replace(/\D/g, "").length >= 7), "Ingresa un teléfono válido.")
-    .transform((value) => value || null),
-  email: z.union([z.literal(""), z.string().trim().max(255).email("Ingresa un correo válido.")])
-    .transform((value) => value.toLowerCase() || null),
+  nombre_completo: z.string().transform(normalizeClientName).pipe(z.string()
+    .min(2, "Ingresa al menos 2 caracteres.").max(255, "Máximo 255 caracteres.")
+    .regex(namePattern, "Usa letras, espacios, guion o apóstrofe; sin números ni símbolos.")),
+  cedula: z.string().trim().regex(/^[0-9]{1,20}$/, "Para cédula, usa solo dígitos (máximo 20)."),
+  celular: z.string().max(64, "El teléfono ingresado es demasiado largo.")
+    .transform(normalizeClientPhone)
+    .refine((value) => value === null || (/^\+?[0-9]{7,20}$/.test(value) && value.length <= 20),
+      "Usa 7 a 20 dígitos y, si corresponde, un + inicial."),
+  email: z.string().trim().max(255, "Máximo 255 caracteres.")
+    .transform((value) => value.toLowerCase() || null)
+    .refine((value) => value === null || z.email().safeParse(value).success, "Ingresa un correo válido."),
   estado_cliente: z.enum(clientStates, { error: "Selecciona un estado válido." }),
   fecha_registro: z.iso.date({ error: "Ingresa una fecha válida." })
     .refine((value) => value <= businessDate(), "La fecha de registro no puede ser futura."),

@@ -28,9 +28,20 @@ export default function ClientForm({ client, membership, onClose, onSaved }: {
     if (!validation.success) {
       setErrors(validation.error.flatten().fieldErrors); setError("Revisa los campos señalados."); return;
     }
+    const normalized = {
+      ...input,
+      nombre_completo: validation.data.nombre_completo,
+      cedula: validation.data.cedula,
+      celular: validation.data.celular ?? "",
+      email: validation.data.email ?? "",
+    };
+    for (const field of ["nombre_completo", "cedula", "celular", "email"] as const) {
+      const element = event.currentTarget.elements.namedItem(field);
+      if (element instanceof HTMLInputElement) element.value = normalized[field];
+    }
     busy.current = true; setPending(true);
     try {
-      const result = await saveClient(client?.id ?? null, input);
+      const result = await saveClient(client?.id ?? null, normalized);
       if (result.ok) onSaved(result.message);
       else { setError(result.message); setErrors(result.errors ?? {}); }
     } catch {
@@ -53,12 +64,12 @@ export default function ClientForm({ client, membership, onClose, onSaved }: {
         <p id="client-form-description" className="mt-3 text-sm text-brand-secondary">Los campos con * son obligatorios. La identificación es única por cliente.</p>
         {error && <p ref={errorSummary} tabIndex={-1} role="alert" className="mt-5 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
         <fieldset disabled={pending} className="mt-6 grid gap-5 sm:grid-cols-2">
-          <div className="sm:col-span-2"><label htmlFor="nombre_completo" className="field-label">Nombre completo *</label>
+          <div className="sm:col-span-2"><label htmlFor="nombre_completo" className="field-label">NOMBRES Y APELLIDOS *</label>
             <input autoFocus id="nombre_completo" name="nombre_completo" autoComplete="name" className="field" required minLength={2} maxLength={255} defaultValue={client?.nombre_completo ?? ""} aria-invalid={Boolean(errors.nombre_completo)} aria-describedby={errors.nombre_completo ? "nombre_completo-error" : undefined} />{fieldError("nombre_completo")}</div>
           <div><label htmlFor="cedula" className="field-label">Identificación / cédula *</label>
             <input id="cedula" name="cedula" className="field" inputMode="numeric" required maxLength={20} defaultValue={client?.cedula ?? ""} aria-invalid={Boolean(errors.cedula)} aria-describedby={errors.cedula ? "cedula-error" : undefined} />{fieldError("cedula")}</div>
           <div><label htmlFor="celular" className="field-label">Teléfono</label>
-            <input id="celular" name="celular" type="tel" autoComplete="tel" className="field" maxLength={20} defaultValue={client?.celular ?? ""} aria-invalid={Boolean(errors.celular)} aria-describedby={errors.celular ? "celular-error" : undefined} />{fieldError("celular")}</div>
+            <input id="celular" name="celular" type="tel" autoComplete="tel" className="field" maxLength={64} defaultValue={client?.celular ?? ""} aria-invalid={Boolean(errors.celular)} aria-describedby={errors.celular ? "celular-error" : undefined} />{fieldError("celular")}</div>
           <div className="sm:col-span-2"><label htmlFor="email" className="field-label">Correo electrónico</label>
             <input id="email" name="email" type="email" autoComplete="email" className="field" maxLength={255} defaultValue={client?.email ?? ""} aria-invalid={Boolean(errors.email)} aria-describedby={errors.email ? "email-error" : undefined} />{fieldError("email")}</div>
           <div><label htmlFor="estado_cliente" className="field-label">Estado *</label>

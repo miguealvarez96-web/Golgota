@@ -44,11 +44,39 @@ function actionHarness({ role = 'admin', duplicate = null, writeError = null, de
 }
 
 test('valida, normaliza y conserva ceros iniciales de identificación', () => {
-  const row = model.clientSchema.parse({ ...valid, nombre_completo: '  Persona Ejemplo  ', email: 'PERSONA@EXAMPLE.COM' });
-  assert.equal(row.nombre_completo, 'Persona Ejemplo');
+  const row = model.clientSchema.parse({ ...valid, nombre_completo: '  Miguel   Fernando Álvarez Muñoz  ', email: ' PERSONA@EXAMPLE.COM ' });
+  assert.equal(row.nombre_completo, 'MIGUEL FERNANDO ÁLVAREZ MUÑOZ');
   assert.equal(row.cedula, '0012345678');
   assert.equal(row.celular, null);
   assert.equal(row.email, 'persona@example.com');
+});
+
+test('normaliza nombres españoles, guion, apóstrofe y espacios múltiples', () => {
+  for (const [input, expected] of [
+    ['José Peña', 'JOSÉ PEÑA'],
+    ['María-José', 'MARÍA-JOSÉ'],
+    ["O'Connor", "O'CONNOR"],
+    ['  José     Peña  ', 'JOSÉ PEÑA'],
+  ]) {
+    assert.equal(model.clientSchema.parse({ ...valid, nombre_completo: input }).nombre_completo, expected);
+  }
+});
+
+test('admite Ñ, tildes, guion y apóstrofe; rechaza números y símbolos en nombres', () => {
+  const row = model.clientSchema.parse({ ...valid, nombre_completo: "  ñusta   maría-josé o'brien  " });
+  assert.equal(row.nombre_completo, "ÑUSTA MARÍA-JOSÉ O'BRIEN");
+  for (const nombre_completo of ['Juan 2', 'María @ López', 'Ana_ María']) {
+    assert.equal(model.clientSchema.safeParse({ ...valid, nombre_completo }).success, false);
+  }
+});
+
+test('normaliza teléfono con espacios y guiones, conserva ceros y acepta + inicial', () => {
+  const row = model.clientSchema.parse({ ...valid, celular: ' (099) 123-4567 ' });
+  assert.equal(row.celular, '0991234567');
+  assert.equal(model.clientSchema.parse({ ...valid, celular: '+593 (99) 123-4567' }).celular, '+593991234567');
+  for (const celular of ['593+991234567', '099.123.4567', '1234abc567']) {
+    assert.equal(model.clientSchema.safeParse({ ...valid, celular }).success, false);
+  }
 });
 
 test('rechaza datos inválidos y asignación de campos protegidos', () => {
@@ -72,9 +100,14 @@ test('búsquedas con caracteres de filtro quedan dentro del literal', () => {
 
 test('staff puede crear; autor real asignado en servidor y listas refrescadas', async () => {
   const h = actionHarness({ role: 'staff' });
-  assert.equal((await h.saveClient(null, valid)).ok, true);
+  assert.equal((await h.saveClient(null, { ...valid, nombre_completo: '  José   Ñusta  ', celular: '(099) 123-4567', email: ' JOSE@EXAMPLE.COM ' })).ok, true);
   assert.equal(h.writes[0].operation, 'insert');
+  assert.equal(h.writes[0].data.nombre_completo, 'JOSÉ ÑUSTA');
+  assert.equal(h.writes[0].data.cedula, '0012345678');
+  assert.equal(h.writes[0].data.celular, '0991234567');
+  assert.equal(h.writes[0].data.email, 'jose@example.com');
   assert.equal(h.writes[0].data.created_by, id);
+  assert.equal(Object.hasOwn(h.writes[0].data, 'auth_user_id'), false);
   assert.deepEqual(h.refreshed, ['/clientes', '/']);
 });
 
@@ -101,6 +134,11 @@ test('sesión inválida y campos adicionales impiden toda escritura', async () =
   const allowed = actionHarness();
   assert.equal((await allowed.saveClient(null, { ...valid, auth_user_id: id })).ok, false);
   assert.equal(allowed.writes.length, 0);
+  for (const protectedField of ['id', 'created_by', 'auth_user_id', 'updated_at']) {
+    const h2 = actionHarness();
+    assert.equal((await h2.saveClient(null, { ...valid, [protectedField]: id })).ok, false);
+    assert.equal(h2.writes.length, 0);
+  }
 });
 
 test('cédula duplicada se detecta antes de escribir y en carreras concurrentes', async () => {
