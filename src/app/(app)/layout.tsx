@@ -52,7 +52,7 @@ export default async function AppLayout({
       <div className="mx-auto max-w-[1600px] lg:grid lg:min-h-[calc(100vh-88px)] lg:grid-cols-[15rem_minmax(0,1fr)]">
         <aside className="border-b border-brand-border bg-brand-surface p-3 sm:p-5 lg:border-b-0 lg:border-r lg:pt-8">
           <div className="lg:sticky lg:top-6">
-            <PortalNavigation />
+            <PortalNavigation role={perfil.rol} />
           </div>
         </aside>
         <div id="portal-content" tabIndex={-1} className="min-w-0 break-words">{children}</div>

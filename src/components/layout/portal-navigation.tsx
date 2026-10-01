@@ -14,8 +14,13 @@ const sections: { title: string; href: string; icon: PortalIconName }[] = [
   { title: "Reportes", href: "/reportes", icon: "reports" },
 ];
 
-export default function PortalNavigation() {
+export default function PortalNavigation({ role }: { role: string }) {
   const pathname = usePathname();
+
+  const visibleSections =
+    role === "staff"
+      ? sections.filter(({ href }) => href !== "/gastos" && href !== "/reportes")
+      : sections;
 
   return (
     <nav aria-label="Navegación del portal">
@@ -23,7 +28,7 @@ export default function PortalNavigation() {
         Portal
       </p>
       <ul className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-1">
-        {sections.map(({ title, href, icon }) => {
+        {visibleSections.map(({ title, href, icon }) => {
           const active = pathname === href || (href !== "/" && pathname.startsWith(`${href}/`));
 
           return (
