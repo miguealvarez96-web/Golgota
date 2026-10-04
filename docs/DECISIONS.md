@@ -100,8 +100,14 @@ Si es RECHAZADO:
 
 - no modifica valores financieros;
 - debe conservar trazabilidad.
+- requiere un motivo de rechazo.
 
 Solo un pago APROBADO se aplica como pago real.
+
+La aprobación usa `registrar_pago` como única fuente de escritura financiera,
+bloquea el reporte y la membresía, rechaza sobrepagos y enlaza exactamente un
+`pago_real_id`. Pagos parciales mantienen `PENDIENTE`; cuando el saldo llega a
+cero la membresía queda `PAGADO`.
 
 La cuenta del alumno se vincula de forma explícita y transaccional a un cliente
 existente. No se crean ni se asocian clientes automáticamente por correo,

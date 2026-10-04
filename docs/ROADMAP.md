@@ -47,7 +47,7 @@ el dry-run, autorizar/aplicar SQL, vincular una cuenta de prueba y desplegar.
 
 ## Fase 3 - Pagos reportados por alumnos
 
-Estado: EXPERIENCIA V1 PREPARADA PARA DRY-RUN SQL
+Estado: BLOQUE 2 COMPLETO, PREPARADO PARA DRY-RUN SQL
 
 Flujo:
 
@@ -68,6 +68,10 @@ Un pago PENDIENTE o RECHAZADO no modifica:
 - renovacion.
 
 Solo un pago APROBADO se aplica como pago real.
+
+La implementación incluye pagos parciales y totales, protección contra
+sobrepago y doble aprobación, trazabilidad completa, rechazo con motivo,
+bandeja filtrable para admin/owner y aislamiento de staff/alumno.
 
 ## Fase 4 - Aplicacion instalable PWA
 

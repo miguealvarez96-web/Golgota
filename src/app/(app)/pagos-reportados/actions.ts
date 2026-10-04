@@ -30,6 +30,7 @@ export async function reviewReportedPayment(input: unknown): Promise<ActionResul
     }
     revalidatePath("/pagos-reportados");
     revalidatePath("/membresias");
+    revalidatePath("/portal");
     revalidatePath("/");
     return { ok: true, message: parsed.data.decision === "aprobar"
       ? "Pago aprobado y aplicado correctamente."

@@ -22,7 +22,15 @@ export const reviewPaymentSchema = z.object({
   reporte_id: z.string().uuid(),
   decision: z.enum(["aprobar", "rechazar"]),
   motivo: z.string().trim().max(500, "El motivo no puede superar 500 caracteres."),
-}).strict();
+}).strict().superRefine((value, context) => {
+  if (value.decision === "rechazar" && value.motivo.length < 3) {
+    context.addIssue({
+      code: "custom",
+      path: ["motivo"],
+      message: "Indica un motivo de rechazo de al menos 3 caracteres.",
+    });
+  }
+});
 
 const nullableText = z.string().nullable();
 const membershipSchema = z.object({
@@ -70,6 +78,7 @@ export type ActionResult = { ok: true; message: string } | { ok: false; message:
 export type AdminPaymentReport = {
   id: string;
   cliente_id: string;
+  usuario_id: string;
   membresia_id: string | null;
   monto: number;
   fecha_pago: string;
@@ -79,10 +88,70 @@ export type AdminPaymentReport = {
   estado: ReportState;
   created_at: string;
   reviewed_at: string | null;
+  reviewed_by: string | null;
   motivo_rechazo: string | null;
   pago_real_id: string | null;
   alumno: string;
+  membresia: string | null;
+  membresia_fecha_inicio: string | null;
+  membresia_fecha_fin: string | null;
+  saldo_membresia: number | null;
+  estado_pago_membresia: string | null;
+  revisor: string | null;
+  monto_aplicado: number | null;
 };
+
+const adminPaymentReportSchema = z.object({
+  id: z.string().uuid(),
+  cliente_id: z.string().uuid(),
+  usuario_id: z.string().uuid(),
+  membresia_id: z.string().uuid().nullable(),
+  monto: z.coerce.number(),
+  fecha_pago: z.string(),
+  banco_origen: z.string(),
+  referencia: z.string(),
+  observacion: nullableText,
+  estado: z.enum(reportStates),
+  created_at: z.string(),
+  reviewed_at: nullableText,
+  reviewed_by: z.string().uuid().nullable(),
+  motivo_rechazo: nullableText,
+  pago_real_id: z.string().uuid().nullable(),
+  alumno: z.string(),
+  membresia: nullableText,
+  membresia_fecha_inicio: nullableText,
+  membresia_fecha_fin: nullableText,
+  saldo_membresia: z.coerce.number().nullable(),
+  estado_pago_membresia: nullableText,
+  revisor: nullableText,
+  monto_aplicado: z.coerce.number().nullable(),
+});
+
+export const adminPaymentReportsSchema = z.array(adminPaymentReportSchema);
+
+export type ReportFilter = "TODOS" | ReportState;
+
+export function filterAdminPaymentReports(
+  reports: AdminPaymentReport[],
+  state: ReportFilter,
+  query: string,
+) {
+  const normalizedQuery = normalizeSearch(query);
+  return reports.filter((report) => {
+    if (state !== "TODOS" && report.estado !== state) return false;
+    if (!normalizedQuery) return true;
+    return normalizeSearch([
+      report.alumno,
+      report.membresia ?? "",
+      report.banco_origen,
+      report.referencia,
+    ].join(" ")).includes(normalizedQuery);
+  });
+}
+
+function normalizeSearch(value: string) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("es-EC").trim();
+}
 
 export function chooseStudentMembership(rows: StudentMembership[]) {
   const available = rows.filter((row) => row.estado_pago !== "CANCELADA");

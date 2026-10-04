@@ -79,7 +79,11 @@ function ReportsHistory({ reports }: { reports: StudentPortal["reportes"] }) {
         <ReportBadge state={report.estado} />
       </div>
       <p className="mt-2 text-xs text-brand-secondary">Pago del {displayDate(report.fecha_pago)}</p>
+      <p className="mt-1 text-xs text-brand-secondary">Reportado {reportDateTime(report.created_at)}</p>
+      {report.estado === "PENDIENTE" && <p className="mt-2 text-sm text-amber-900">Pendiente de verificación. Todavía no modifica tu saldo.</p>}
+      {report.estado === "APROBADO" && <p className="mt-2 text-sm font-medium text-emerald-800">Pago aprobado y aplicado a tu membresía.</p>}
       {report.estado === "RECHAZADO" && report.motivo_rechazo && <p className="mt-2 text-sm text-red-700">Motivo: {report.motivo_rechazo}</p>}
+      {report.reviewed_at && <p className="mt-1 text-xs text-brand-secondary">Revisado {reportDateTime(report.reviewed_at)}</p>}
     </li>)}</ol> : <p className="mt-5 text-sm text-brand-secondary">Todavía no has reportado pagos.</p>}
   </section>;
 }
@@ -93,4 +97,12 @@ function ReportBadge({ state }: { state: "PENDIENTE" | "APROBADO" | "RECHAZADO" 
 
 function Metric({ label, value }: { label: string; value: string }) {
   return <div><dt className="text-xs text-brand-secondary">{label}</dt><dd className="mt-1 break-words font-medium text-brand-text">{value}</dd></div>;
+}
+
+function reportDateTime(value: string) {
+  return new Intl.DateTimeFormat("es-EC", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "America/Guayaquil",
+  }).format(new Date(value));
 }

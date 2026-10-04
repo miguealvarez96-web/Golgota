@@ -50,6 +50,14 @@ preparados en código y SQL pendiente de aplicación. Un pago reportado queda
 `PENDIENTE` hasta que `admin` u `owner` lo apruebe; un pago pendiente o rechazado
 no modifica abonos, saldos ni el estado financiero.
 
+El BLOQUE 2 de pagos completos está preparado en
+`20261004_pagos_completos_v1.sql`. La aprobación bloquea reporte y membresía,
+rechaza saldo cero, cancelaciones y sobrepagos, reutiliza `registrar_pago` y
+vincula el pago real de forma atómica. La bandeja de admin/owner incorpora
+búsqueda, filtros, membresía, revisor, fechas y vínculo de trazabilidad. El
+rechazo exige motivo y nunca escribe en pagos o membresías. Falta ejecutar el
+dry-run y autorizar las migraciones reales.
+
 ## Dashboard
 
 El Dashboard de `admin` y `owner` contiene cinco KPI: clientes activos, membresías vigentes, membresías por vencer, ingresos del mes y pagos pendientes. La vista `v_dashboard_kpis` centraliza estos valores y usa la fecha de negocio de `America/Guayaquil`. `staff` recibe un panel operativo en construcción; la página no consulta la vista financiera.
