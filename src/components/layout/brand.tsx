@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 
-export default function Brand() {
+export default function Brand({ subtitle = "Portal de administración" }: { subtitle?: string }) {
   const [logoLoaded, setLogoLoaded] = useState(false);
   const [logoFailed, setLogoFailed] = useState(false);
 
@@ -19,7 +19,7 @@ export default function Brand() {
       </div>
       <div>
         <p className="text-lg font-bold tracking-tight text-brand-text">Gólgota CF</p>
-        <p className="mt-0.5 text-[10px] font-medium uppercase tracking-[0.2em] text-brand-secondary">Portal de administración</p>
+        <p className="mt-0.5 text-[10px] font-medium uppercase tracking-[0.2em] text-brand-secondary">{subtitle}</p>
       </div>
     </div>
   );
