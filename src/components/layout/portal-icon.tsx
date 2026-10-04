@@ -6,6 +6,7 @@ const paths = {
   products: "m12 3 9 5-9 5-9-5 9-5 M3 8v10l9 5 9-5V8 M12 13v10",
   expenses: "M4 3h16v18l-4-2-4 2-4-2-4 2V3 M8 8h8 M8 12h8",
   reports: "M4 3v18h17 M8 16v-4 M13 16V8 M18 16V5",
+  payments: "M3 6h18v12H3z M3 10h18 M7 15h4",
   plus: "M12 5v14 M5 12h14",
 } as const;
 

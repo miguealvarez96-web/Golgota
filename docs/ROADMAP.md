@@ -29,7 +29,7 @@ Pendientes:
 
 ## Fase 2 - Portal del alumno
 
-Estado: PENDIENTE
+Estado: PREPARADO PARA DRY-RUN SQL
 
 Funciones previstas:
 
@@ -41,11 +41,13 @@ Funciones previstas:
 - renovar;
 - reportar pago.
 
-No construir todo de golpe.
+Portal V1 implementado: acceso segregado, perfil, membresía actual, vigencia,
+saldo, historial, reportes de pago y cierre de sesión. Falta únicamente validar
+el dry-run, autorizar/aplicar SQL, vincular una cuenta de prueba y desplegar.
 
 ## Fase 3 - Pagos reportados por alumnos
 
-Estado: PENDIENTE
+Estado: EXPERIENCIA V1 PREPARADA PARA DRY-RUN SQL
 
 Flujo:
 

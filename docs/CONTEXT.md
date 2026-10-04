@@ -26,11 +26,29 @@ Los datos se validan en frontend y servidor. Nombres se normalizan a mayúsculas
 
 `admin` tiene control completo. `owner` puede consultar, crear, renovar y cobrar. `staff` usa una proyección operativa reducida que expone cliente, plan, fecha de fin y vigencia, sin columnas financieras ni historial de pagos.
 
+## Portal del alumno V1
+
+El código del Portal del Alumno V1 está completo y preparado para dry-run SQL,
+pero la migración `20261002_portal_alumno_v1.sql` todavía no se ha aplicado. Un
+alumno activo entra por `/portal`, consulta únicamente su perfil, membresía,
+vigencia, saldo e historial, y registra reportes de pago que nacen `PENDIENTE`.
+Admin y owner disponen de la bandeja de revisión; staff no puede consultarla ni
+aprobar o rechazar reportes.
+
+La relación conserva `auth.users -> public.usuarios -> public.clientes` mediante
+`clientes.auth_user_id`. La operación manual
+`supabase/operations/20261002_vincular_cuenta_alumno.sql` vincula una cuenta y un
+cliente existentes dentro de una sola transacción, sin duplicar clientes ni
+autoasociar identidades.
+
 ## Pagos
 
 Los pagos registrados son transacciones individuales asociadas a una membresía. `registrar_pago` valida el monto, evita sobrepagos y pagos a membresías canceladas, y actualiza los agregados de saldo dentro de la operación. Solo `admin` y `owner` registran pagos o consultan su historial; el historial no se borra ni edita desde la API normal.
 
-El reporte de comprobantes por alumnos y su aprobación o rechazo aún no están implementados. Regla acordada para esa fase: un pago reportado queda `PENDIENTE` hasta que `admin` u `owner` lo apruebe; un pago pendiente o rechazado no modifica abonos, saldos ni el estado financiero.
+El reporte de comprobantes por alumnos y su aprobación o rechazo están
+preparados en código y SQL pendiente de aplicación. Un pago reportado queda
+`PENDIENTE` hasta que `admin` u `owner` lo apruebe; un pago pendiente o rechazado
+no modifica abonos, saldos ni el estado financiero.
 
 ## Dashboard
 

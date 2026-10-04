@@ -7,6 +7,11 @@ Los roles actuales son:
 - admin
 - owner
 - staff
+- alumno
+
+`alumno` accede únicamente a `/portal`, a su ficha vinculada mediante
+`clientes.auth_user_id`, a sus membresías y a sus propios reportes de pago. No
+accede al portal administrativo ni hereda capacidades operativas de `staff`.
 
 ## Staff
 
@@ -97,6 +102,10 @@ Si es RECHAZADO:
 - debe conservar trazabilidad.
 
 Solo un pago APROBADO se aplica como pago real.
+
+La cuenta del alumno se vincula de forma explícita y transaccional a un cliente
+existente. No se crean ni se asocian clientes automáticamente por correo,
+teléfono u otro dato coincidente.
 
 ## Interfaz
 

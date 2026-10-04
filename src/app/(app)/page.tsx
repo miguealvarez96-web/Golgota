@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 
 export default async function HomePage() {
   const supabase = createClient();
@@ -12,6 +13,10 @@ export default async function HomePage() {
     .select("rol")
     .eq("id", user?.id ?? "")
     .single();
+
+  if (!perfilError && perfil?.rol === "alumno") {
+    redirect("/portal");
+  }
 
   if (perfilError || !perfil || !["admin", "owner", "staff"].includes(perfil.rol)) {
     return (

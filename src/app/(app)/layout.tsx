@@ -31,6 +31,14 @@ export default async function AppLayout({
     redirect("/login");
   }
 
+  if (perfil.rol === "alumno") {
+    redirect("/portal");
+  }
+
+  if (!["admin", "owner", "staff"].includes(perfil.rol)) {
+    redirect("/login");
+  }
+
   return (
     <div className="min-h-screen bg-brand-bg text-brand-text">
       <a href="#portal-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-brand-text focus:p-3 focus:text-white">Ir al contenido</a>
