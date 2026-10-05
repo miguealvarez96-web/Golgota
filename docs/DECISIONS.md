@@ -138,6 +138,14 @@ Identidad visual acordada:
 
 No volver al diseño general de fondo azul oscuro.
 
+## PWA
+
+La aplicación usa el manifest nativo de Next.js App Router y no añade una dependencia PWA externa. El service worker se registra únicamente en producción y limita su caché a iconos, logo, fallback offline y archivos versionados de `/_next/static`.
+
+Las páginas autenticadas y la navegación usan red con `no-store`; nunca se persisten respuestas de Supabase, credenciales, pagos, saldos ni datos personales para uso offline. La pérdida de conexión muestra una página informativa, no una copia de información privada.
+
+La instalación se ofrece de forma discreta mediante `beforeinstallprompt`; Safari en iOS recibe una guía manual bajo demanda.
+
 ## Privacidad y LOPDP
 
 La Ley Organica de Proteccion de Datos Personales de Ecuador debe considerarse un requisito del proyecto.

@@ -75,7 +75,7 @@ bandeja filtrable para admin/owner y aislamiento de staff/alumno.
 
 ## Fase 4 - Aplicacion instalable PWA
 
-Estado: PENDIENTE
+Estado: BLOQUE 4 COMPLETO, LISTO PARA CIERRE Y DESPLIEGUE
 
 Objetivo:
 
@@ -90,6 +90,19 @@ Debe incluir:
 - funcionamiento correcto en movil.
 
 La PWA utilizara el mismo frontend Next.js y el mismo backend Supabase.
+
+Implementado:
+
+- manifest compatible con Next.js 14 App Router;
+- iconos 192, 512, maskable y Apple Touch;
+- logo oficial y favicon derivado sin rutas rotas;
+- metadata global, theme color y modo standalone;
+- service worker seguro limitado a assets públicos;
+- fallback offline sin información privada;
+- ayuda discreta de instalación para navegadores compatibles e iOS;
+- pruebas y macro de cierre sin dependencia de SQL.
+
+Pendiente únicamente: autorizar commit/push y despliegue mediante el macro del BLOQUE 4.
 
 ## Fase 5 - Privacidad y LOPDP
 

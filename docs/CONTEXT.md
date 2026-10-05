@@ -85,9 +85,11 @@ Además de las pruebas automatizadas locales, se hicieron pruebas manuales reale
 
 Las pruebas automatizadas también verifican que las acciones directas de edición, creación de membresías y registro de pagos no ejecuten escrituras/RPC para `staff`, que el historial y listado usen solo la proyección operativa y que el Dashboard no consulte `v_dashboard_kpis`.
 
-## Interfaz y pendiente conocido
+## PWA e interfaz
 
-La interfaz sigue el estilo claro, profesional y responsive: fondo claro, superficies blancas, texto navy y acentos cobre/naranja. El componente de marca tiene un fallback visual, pero `public/golgota-logo.png` no está presente y la ruta produce un 404. Queda pendiente incorporar o resolver el recurso en una tarea autorizada.
+El BLOQUE 4 convierte el portal en una PWA instalable con manifest de App Router, iconos propios, soporte de instalación en navegadores compatibles, orientación para iOS y fallback visual sin conexión. La referencia rota `public/golgota-logo.png` fue resuelta a partir del logo oficial `images.jpg`, conservando el tigre, el texto "GÓLGOTA CF / ONE BOX, ONE FAMILY", sus colores y su composición. El favicon predeterminado de Vercel también fue reemplazado por un derivado de ese mismo logo.
+
+El service worker conserva únicamente assets públicos y el fallback offline. Las navegaciones siempre consultan la red con `no-store`; no se cachean páginas autenticadas, respuestas de Supabase, pagos, saldos ni datos de alumnos. La interfaz mantiene fondo claro, superficies blancas, texto navy, acentos cobre/naranja y comportamiento responsive.
 
 ## Privacidad y LOPDP
 
