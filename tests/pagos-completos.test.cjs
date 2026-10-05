@@ -143,6 +143,7 @@ test('filtros por estado y búsqueda de alumno funcionan sin distinguir tildes',
   const base = {
     id: reportId, cliente_id: reportId, usuario_id: reportId, membresia_id: null, monto: 20,
     fecha_pago: '2026-10-01', banco_origen: 'Pichincha', referencia: 'ABC-1',
+    comprobante_path: null, comprobante_mime: null, comprobante_size: null,
     observacion: null, estado: 'PENDIENTE', created_at: '2026-10-01T12:00:00Z',
     reviewed_at: null, reviewed_by: null, motivo_rechazo: null, pago_real_id: null,
     alumno: 'MIGUEL ÁLVAREZ', membresia: 'MENSUAL', membresia_fecha_inicio: null,
@@ -158,7 +159,7 @@ test('UI protege doble envío y muestra todos los datos requeridos', () => {
   assert.match(manager, /activeReview\.current/);
   assert.match(manager, /window\.confirm/);
   assert.match(manager, /Buscar alumno/);
-  for (const label of ['Membresía', 'Monto reportado', 'Fecha del pago', 'Banco / origen', 'Referencia', 'Saldo actual', 'Cuenta reportante', 'Revisor', 'Fecha de revisión', 'Pago real', 'Monto aplicado']) {
+  for (const label of ['Membresía', 'Monto reportado', 'Fecha del pago', 'Saldo actual', 'Cuenta reportante', 'Revisor', 'Fecha de revisión', 'Pago real', 'Monto aplicado', 'PaymentReceiptButton']) {
     assert.match(manager, new RegExp(label));
   }
   assert.match(studentDashboard, /Pago aprobado y aplicado a tu membresía/);

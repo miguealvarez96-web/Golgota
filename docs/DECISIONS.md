@@ -114,6 +114,19 @@ Si es RECHAZADO:
 
 Solo un pago APROBADO se aplica como pago real.
 
+Los reportes nuevos requieren un comprobante privado JPG, JPEG, PNG o PDF de
+hasta 5 MB. El nombre original nunca identifica el objeto: Storage usa
+`{auth_user_id}/{uuid}.{ext}` y la tabla guarda únicamente ruta, MIME y tamaño.
+Las columnas históricas de banco y referencia se conservan, aceptan `NULL` y no
+se solicitan en el flujo nuevo. Los reportes anteriores sin archivo siguen
+visibles y se identifican como históricos.
+
+El bucket `payment-receipts` no es público. Alumno solo carga y firma archivos
+propios enlazados a sus reportes; admin y owner pueden firmar cualquier
+comprobante de la bandeja; staff no tiene acceso. Una carga fallida y aún no
+enlazada puede limpiarse, pero no existe UPDATE ni reemplazo del comprobante una
+vez creado el reporte.
+
 La aprobación usa `registrar_pago` como única fuente de escritura financiera,
 bloquea el reporte y la membresía, rechaza sobrepagos y enlaza exactamente un
 `pago_real_id`. Pagos parciales mantienen `PENDIENTE`; cuando el saldo llega a

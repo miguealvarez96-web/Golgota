@@ -1,6 +1,6 @@
 # Estado final de Gólgota CrossFit
 
-Fecha de revisión técnica: 2026-10-04.
+Fecha de revisión técnica: 2026-10-05.
 
 El código queda preparado para operación diaria y cierre controlado. Esta revisión no ejecutó SQL, no publicó cambios y no confirma por sí sola el estado de la base remota ni del despliegue de Vercel.
 
@@ -9,7 +9,7 @@ El código queda preparado para operación diaria y cierre controlado. Esta revi
 - Autenticación: login, logout y recuperación de contraseña con mensajes seguros.
 - Clientes: búsqueda, filtros, alta, edición autorizada, inactivación e identificación de vigencia.
 - Membresías: alta, renovación histórica, control de solapamientos, vigencia y detalle financiero por rol.
-- Pagos: pagos reales transaccionales, reportes del alumno y revisión admin/owner.
+- Pagos: pagos reales transaccionales, reportes del alumno con comprobante privado y revisión admin/owner.
 - Productos: catálogo, stock, imágenes privadas y gestión admin/owner.
 - Portal coach: panel operativo, clientes, WOD y comunicados sin datos financieros.
 - Portal alumno: perfil, membresía, historial, saldo, reporte de pago y privacidad.
@@ -42,6 +42,10 @@ El frontend usa únicamente `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_P
 
 Antes de producción debe comprobarse en la base remota, mediante los macros y postflight de cada bloque, que estén aplicadas las migraciones preparadas de Portal Alumno, pagos completos, coaches y privacidad. El BLOQUE FINAL nunca aplica SQL y se detiene si encuentra archivos SQL nuevos o modificados.
 
+El bloque de comprobantes añade `20261005_comprobantes_pago_v1.sql` después de
+Portal Alumno y Pagos Completos. La migración sigue pendiente de dry-run y
+autorización real; no se ejecutó contra Supabase durante esta revisión.
+
 ## Vercel y PWA
 
 No se realizó deploy en esta revisión. Vercel debe tener las variables públicas de Supabase configuradas para producción. El logo oficial y sus derivados PWA están presentes; el service worker solo precachea assets públicos y usa red con `no-store` para navegaciones.
@@ -54,12 +58,15 @@ No se realizó deploy en esta revisión. Vercel debe tener las variables públic
 - Mensajes de aplicación sin detalles internos de PostgreSQL/Supabase.
 - Sin contraseñas, tokens, URL de base con credenciales ni service role en `src/public`.
 - Imágenes de productos en Storage privado con URLs firmadas temporales.
+- Comprobantes de pago en `payment-receipts` privado, con límite de 5 MB, MIME y firma binaria validados, rutas UUID y URLs firmadas por 120 segundos.
+- Alumno limitado a comprobantes propios; admin/owner con lectura; staff sin acceso. Los comprobantes enlazados no se reemplazan ni eliminan desde el flujo normal.
 - Navegaciones autenticadas no persistidas por la PWA.
 - No hay borrado automático de clientes, historiales, pagos ni solicitudes de privacidad.
 
 ## Scripts de cierre
 
 - `scripts/cerrar-bloque-pagos.ps1`
+- `scripts/cerrar-bloque-comprobantes-pago.ps1`
 - `scripts/cerrar-bloque-coaches.ps1`
 - `scripts/cerrar-bloque-pwa.ps1`
 - `scripts/cerrar-bloque-reportes.ps1`
@@ -71,7 +78,7 @@ El macro final ejecuta pruebas, TypeScript, build, revisión Git y checklist; a�
 
 ## Pendientes reales antes de operar
 
-1. Ejecutar los dry-run y postflight de bloques con SQL y autorizar cada aplicación pendiente.
+1. Ejecutar los dry-run y postflight de bloques con SQL, incluido comprobantes de pago, y autorizar cada aplicación pendiente.
 2. Vincular y probar cuentas reales de cada rol, especialmente un alumno, en la base objetivo.
 3. Configurar y verificar variables de entorno en Vercel.
 4. Completar y validar los datos legales/administrativos señalados en `docs/PRIVACIDAD.md`.

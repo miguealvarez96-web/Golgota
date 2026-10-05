@@ -4,6 +4,7 @@ import { displayDate } from "@/lib/clientes/model";
 import ReportPaymentForm from "./report-payment-form";
 import StudentPrivacyPanel from "./student-privacy-panel";
 import type { StudentPrivacyData } from "@/lib/privacidad/model";
+import PaymentReceiptButton from "./payment-receipt-button";
 
 export default function StudentDashboard({ data, privacy }: { data: StudentPortal; privacy: StudentPrivacyData }) {
   const current = chooseStudentMembership(data.membresias);
@@ -78,11 +79,15 @@ function ReportsHistory({ reports }: { reports: StudentPortal["reportes"] }) {
     {reports.length ? <ol className="mt-5 divide-y divide-brand-border">{reports.map((report) => <li key={report.id} className="py-4 first:pt-0">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div><p className="font-semibold">{moneyLabel(report.monto)}</p>
-          <p className="mt-1 text-sm text-brand-secondary">{report.banco_origen} · {report.referencia}</p></div>
+          <p className="mt-1 text-sm text-brand-secondary">Pago del {displayDate(report.fecha_pago)}</p></div>
         <ReportBadge state={report.estado} />
       </div>
-      <p className="mt-2 text-xs text-brand-secondary">Pago del {displayDate(report.fecha_pago)}</p>
       <p className="mt-1 text-xs text-brand-secondary">Reportado {reportDateTime(report.created_at)}</p>
+      {report.observacion && <p className="mt-2 text-sm text-brand-secondary"><span className="font-medium text-brand-text">Observación:</span> {report.observacion}</p>}
+      {(report.banco_origen || report.referencia) && <p className="mt-2 text-xs text-brand-secondary">Datos históricos: {[report.banco_origen, report.referencia].filter(Boolean).join(" · ")}</p>}
+      {report.comprobante_path && report.comprobante_mime
+        ? <PaymentReceiptButton reportId={report.id} />
+        : <p className="mt-2 text-xs text-brand-secondary">Sin comprobante adjunto (reporte histórico).</p>}
       {report.estado === "PENDIENTE" && <p className="mt-2 text-sm text-amber-900">Pendiente de verificación. Todavía no modifica tu saldo.</p>}
       {report.estado === "APROBADO" && <p className="mt-2 text-sm font-medium text-emerald-800">Pago aprobado y aplicado a tu membresía.</p>}
       {report.estado === "RECHAZADO" && report.motivo_rechazo && <p className="mt-2 text-sm text-red-700">Motivo: {report.motivo_rechazo}</p>}

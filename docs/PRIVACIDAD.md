@@ -23,7 +23,7 @@ Documento técnico de trabajo para el BLOQUE 6. No sustituye asesoría jurídica
 | `public.clientes` | identificación, contacto, datos operativos y vínculo Auth | Gestión del servicio y membresías | Roles operativos conforme a RLS |
 | Membresías y pagos | plan, fechas, valores, saldo e historial de pagos | Prestación del servicio, cobranza e historial financiero | Alumno sobre sus datos; admin/owner; staff sin finanzas |
 | Asistencia | cliente, fecha, horario | Control de acceso y operación del gimnasio | Roles operativos autorizados |
-| Reportes de pago | monto, fecha, origen, referencia, observación y revisión | Verificar una comunicación de pago antes de registrarla | Alumno propio y admin/owner |
+| Reportes de pago | monto, fecha, comprobante privado, MIME, tamaño, observación y revisión; origen/referencia solo históricos | Verificar una comunicación de pago antes de registrarla | Alumno propio y admin/owner; staff sin acceso |
 | Privacidad | versión aceptada, fecha, finalidades, preferencia promocional, solicitud, respuesta y revisor | Evidencia, atención de derechos y trazabilidad | Alumno propio y admin/owner |
 | Auditoría | operación, tabla, UUID actor y copias JSON de fila anterior/nueva | Seguridad y trazabilidad | Actualmente admin según RLS; requiere revisión de retención |
 
@@ -50,7 +50,7 @@ No se eliminan datos existentes en este bloque. Se documentan los siguientes pun
 - `membresias.estado_legacy` y `membresias.metodo_pago`: son campos históricos conservados; definir retención y acceso sin reintroducir escritura.
 - `auditoria_logs.old_data/new_data`: pueden replicar datos personales completos. Revisar acceso, campos capturados, retención y un mecanismo seguro de depuración que preserve obligaciones de trazabilidad.
 - WOD, comunicados y observaciones: evitar datos personales, información de salud y otros datos no necesarios en texto libre.
-- Referencias bancarias y observaciones de pagos reportados: limitar el contenido solicitado y definir conservación después de la revisión.
+- Comprobantes y observaciones de pagos reportados: definir conservación después de la revisión; banco y referencia dejan de solicitarse y permanecen solo en históricos.
 - No se capturan IP, agente de usuario, geolocalización ni huella de dispositivo como evidencia de aceptación en este bloque.
 
 ## Proveedores, transferencias y retención
@@ -64,6 +64,7 @@ También están pendientes la razón social o nombre completo del responsable, R
 - El navegador usa la clave publicable y la sesión del usuario; no se incorpora `service_role`.
 - Las RPC derivan el titular y el revisor desde `auth.uid()` y vuelven a comprobar el rol.
 - Las tablas no conceden INSERT, UPDATE ni DELETE directo a `authenticated`.
+- Los comprobantes usan un bucket privado, rutas UUID y URL firmada temporal; la política de borrado solo limpia cargas fallidas aún no enlazadas.
 - El service worker no precarga `/privacidad`; las navegaciones usan red con `no-store` y no persisten páginas autenticadas.
 - No guardar contraseñas ni URL de conexión en archivos, logs o commits. El macro usa únicamente `SUPABASE_DB_URL` en memoria.
 

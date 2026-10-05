@@ -6,6 +6,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const Module = require('node:module');
 const ts = require('typescript');
+if (typeof File === 'undefined') global.File = require('node:buffer').File;
 
 function load(relative, mocks = {}) {
   const filename = path.join(__dirname, '..', relative);
@@ -35,13 +36,14 @@ const studentAccess = fs.readFileSync(path.join(__dirname, '..', 'src/lib/alumno
 const studentId = 'b98e5f70-849c-4df8-906a-2b20654fdb39';
 const reportId = '24b14e94-4408-4ea9-bde0-44d867a2ae09';
 
-test('valida monto, referencia, banco y fecha del reporte', () => {
-  const valid = { monto: 25.5, fecha_pago: '2026-01-10', banco_origen: 'Banco Pichincha', referencia: 'ABC-123', observacion: '', membresia_id: studentId };
+test('valida monto, fecha y observación sin exigir banco ni referencia', () => {
+  const valid = { monto: 25.5, fecha_pago: '2026-01-10', observacion: '', membresia_id: studentId };
   assert.equal(model.reportPaymentSchema.safeParse(valid).success, true);
   for (const change of [
     { monto: 0 }, { monto: -1 }, { monto: 1.001 },
-    { referencia: '' }, { banco_origen: '' }, { fecha_pago: '2999-01-01' },
+    { fecha_pago: '2999-01-01' },
   ]) assert.equal(model.reportPaymentSchema.safeParse({ ...valid, ...change }).success, false, JSON.stringify(change));
+  assert.equal(model.reportPaymentSchema.safeParse({ ...valid, banco_origen: 'Banco' }).success, false);
 });
 
 test('selecciona membresía vigente antes que futura o vencida', () => {
@@ -53,30 +55,48 @@ test('selecciona membresía vigente antes que futura o vencida', () => {
 });
 
 function studentActionHarness({ access = true, rpcError = null } = {}) {
-  const calls = [], refreshed = [];
+  const calls = [], refreshed = [], uploads = [], removals = [];
   const { reportStudentPayment } = load('src/app/(student)/portal/actions.ts', {
-    '@/lib/alumnos/access': { async getStudentAccess() { return access ? { supabase: { async rpc(name, args) { calls.push({ name, args }); return { error: rpcError }; } } } : null; } },
+    '@/lib/alumnos/access': { async getStudentAccess() { return access ? { userId: studentId, supabase: {
+      storage: { from() { return {
+        async upload(path, bytes, options) { uploads.push({ path, bytes, options }); return { error: null }; },
+        async remove(paths) { removals.push(paths); return { error: null }; },
+      }; } },
+      async rpc(name, args) { calls.push({ name, args }); return { error: rpcError }; },
+    } } : null; } },
     '@/lib/alumnos/model': model,
     'next/cache': { revalidatePath(value) { refreshed.push(value); } },
   });
-  return { reportStudentPayment, calls, refreshed };
+  return { reportStudentPayment, calls, refreshed, uploads, removals };
+}
+
+function paymentForm(overrides = {}) {
+  const form = new FormData();
+  form.set('monto', String(overrides.monto ?? 20));
+  form.set('fecha_pago', overrides.fecha_pago ?? '2026-01-10');
+  form.set('observacion', overrides.observacion ?? 'Pago mensual');
+  form.set('membresia_id', studentId);
+  form.set('comprobante', overrides.comprobante ?? new File([Buffer.from('%PDF-1.7')], 'pago.pdf', { type: 'application/pdf' }));
+  return form;
 }
 
 test('alumno reporta mediante RPC y recibe estado pendiente, sin escribir pagos reales', async () => {
   const harness = studentActionHarness();
-  const result = await harness.reportStudentPayment({ monto: 20, fecha_pago: '2026-01-10', banco_origen: 'Origen', referencia: 'REF-1', observacion: '', membresia_id: studentId });
+  const result = await harness.reportStudentPayment(paymentForm());
   assert.deepEqual(result, { ok: true, message: 'Pago reportado. Pendiente de verificación.' });
   assert.equal(harness.calls[0].name, 'reportar_pago_alumno');
   assert.equal(harness.calls[0].args.p_monto, 20);
+  assert.equal(harness.calls[0].args.p_comprobante_mime, 'application/pdf');
+  assert.equal(harness.uploads.length, 1);
   assert.deepEqual(harness.refreshed, ['/portal']);
 });
 
-test('monto o referencia inválidos y sesión no alumno impiden invocar la RPC', async () => {
+test('monto o comprobante inválidos y sesión no alumno impiden invocar la RPC', async () => {
   const invalid = studentActionHarness();
-  assert.equal((await invalid.reportStudentPayment({ monto: 0, fecha_pago: '2026-01-10', banco_origen: 'Origen', referencia: '', observacion: '', membresia_id: studentId })).ok, false);
+  assert.equal((await invalid.reportStudentPayment(paymentForm({ monto: 0 }))).ok, false);
   assert.equal(invalid.calls.length, 0);
   const denied = studentActionHarness({ access: false });
-  assert.equal((await denied.reportStudentPayment({ monto: 20, fecha_pago: '2026-01-10', banco_origen: 'Origen', referencia: 'REF-1', observacion: '', membresia_id: studentId })).ok, false);
+  assert.equal((await denied.reportStudentPayment(paymentForm())).ok, false);
   assert.equal(denied.calls.length, 0);
 });
 

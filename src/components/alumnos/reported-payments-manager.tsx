@@ -10,6 +10,7 @@ import {
   type ReportFilter,
 } from "@/lib/alumnos/model";
 import { displayDate } from "@/lib/clientes/model";
+import PaymentReceiptButton from "./payment-receipt-button";
 
 const filters: { value: ReportFilter; label: string }[] = [
   { value: "TODOS", label: "Todos" },
@@ -122,8 +123,6 @@ export default function ReportedPaymentsManager({ reports }: { reports: AdminPay
             <Metric label="Membresía" value={membershipLabel(report)} />
             <Metric label="Monto reportado" value={moneyLabel(report.monto)} />
             <Metric label="Fecha del pago" value={displayDate(report.fecha_pago)} />
-            <Metric label="Banco / origen" value={report.banco_origen} />
-            <Metric label="Referencia" value={report.referencia} />
             <Metric label="Saldo actual" value={report.saldo_membresia === null ? "No disponible" : moneyLabel(report.saldo_membresia)} />
             <Metric label="Estado de membresía" value={report.estado_pago_membresia ?? "No disponible"} />
             <Metric label="Cuenta reportante" value={report.usuario_id} />
@@ -131,6 +130,10 @@ export default function ReportedPaymentsManager({ reports }: { reports: AdminPay
           </dl>
 
           {report.observacion && <p className="mt-4 rounded-xl bg-brand-bg p-3 text-sm"><span className="font-medium">Observación:</span> {report.observacion}</p>}
+          {(report.banco_origen || report.referencia) && <p className="mt-3 text-xs text-brand-secondary">Datos históricos: {[report.banco_origen, report.referencia].filter(Boolean).join(" · ")}</p>}
+          {report.comprobante_path && report.comprobante_mime
+            ? <PaymentReceiptButton reportId={report.id} />
+            : <p className="mt-3 text-xs text-brand-secondary">Sin comprobante adjunto (reporte histórico).</p>}
 
           {report.estado !== "PENDIENTE" && <dl className="mt-4 grid gap-4 rounded-xl border border-brand-border bg-brand-bg p-4 text-sm sm:grid-cols-2 xl:grid-cols-4">
             <Metric label="Revisor" value={report.revisor ?? report.reviewed_by ?? "No disponible"} />

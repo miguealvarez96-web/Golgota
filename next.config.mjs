@@ -1,8 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    // Admite una imagen de 2 MB mas el pequeno overhead de multipart/form-data.
-    serverActions: { bodySizeLimit: "3mb" },
+    // Admite un comprobante de 5 MB mas el overhead de multipart/form-data.
+    // Cada flujo conserva además su límite específico en la validación server-side.
+    serverActions: { bodySizeLimit: "6mb" },
   },
   async headers() {
     return [

@@ -31,7 +31,8 @@ Los datos se validan en frontend y servidor. Nombres se normalizan a mayúsculas
 El código del Portal del Alumno V1 está completo y preparado para dry-run SQL,
 pero la migración `20261002_portal_alumno_v1.sql` todavía no se ha aplicado. Un
 alumno activo entra por `/portal`, consulta únicamente su perfil, membresía,
-vigencia, saldo e historial, y registra reportes de pago que nacen `PENDIENTE`.
+vigencia, saldo e historial, y registra reportes de pago con comprobante JPG,
+JPEG, PNG o PDF de hasta 5 MB que nacen `PENDIENTE`.
 Admin y owner disponen de la bandeja de revisión; staff no puede consultarla ni
 aprobar o rechazar reportes.
 
@@ -49,6 +50,13 @@ El reporte de comprobantes por alumnos y su aprobación o rechazo están
 preparados en código y SQL pendiente de aplicación. Un pago reportado queda
 `PENDIENTE` hasta que `admin` u `owner` lo apruebe; un pago pendiente o rechazado
 no modifica abonos, saldos ni el estado financiero.
+
+La migración aditiva `20261005_comprobantes_pago_v1.sql` crea el bucket privado
+`payment-receipts`, conserva banco y referencia solo por compatibilidad histórica
+y exige comprobante en los reportes nuevos. El alumno carga bajo
+`{auth_user_id}/{uuid}.{ext}` y consulta únicamente archivos enlazados a sus
+propios reportes; admin/owner consultan todos mediante URL firmada temporal y
+`staff` no tiene acceso. No se implementa reemplazo de evidencia en esta fase.
 
 El BLOQUE 2 de pagos completos está preparado en
 `20261004_pagos_completos_v1.sql`. La aprobación bloquea reporte y membresía,

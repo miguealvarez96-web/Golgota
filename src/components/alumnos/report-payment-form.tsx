@@ -4,19 +4,24 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { reportStudentPayment } from "@/app/(student)/portal/actions";
-import { reportPaymentSchema, type ReportPaymentInput } from "@/lib/alumnos/model";
+import {
+  reportPaymentSchema,
+  validatePaymentReceiptMetadata,
+  type ReportPaymentInput,
+} from "@/lib/alumnos/model";
 import { businessDate } from "@/lib/clientes/model";
 
 export default function ReportPaymentForm({ membershipId }: { membershipId: string | null }) {
   const [message, setMessage] = useState("");
   const [serverError, setServerError] = useState("");
+  const [receipt, setReceipt] = useState<File | null>(null);
+  const [receiptError, setReceiptError] = useState("");
+  const [fileInputKey, setFileInputKey] = useState(0);
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<ReportPaymentInput>({
     resolver: zodResolver(reportPaymentSchema),
     defaultValues: {
       monto: undefined,
       fecha_pago: businessDate(),
-      banco_origen: "",
-      referencia: "",
       observacion: "",
       membresia_id: membershipId,
     },
@@ -25,7 +30,23 @@ export default function ReportPaymentForm({ membershipId }: { membershipId: stri
   async function submit(values: ReportPaymentInput) {
     setMessage("");
     setServerError("");
-    const result = await reportStudentPayment(values);
+    setReceiptError("");
+    if (!receipt) {
+      setReceiptError("Adjunta el comprobante del pago.");
+      return;
+    }
+    const validation = validatePaymentReceiptMetadata(receipt);
+    if (!validation.ok) {
+      setReceiptError(validation.message);
+      return;
+    }
+    const formData = new FormData();
+    formData.set("monto", String(values.monto));
+    formData.set("fecha_pago", values.fecha_pago);
+    formData.set("observacion", values.observacion);
+    if (values.membresia_id) formData.set("membresia_id", values.membresia_id);
+    formData.set("comprobante", receipt);
+    const result = await reportStudentPayment(formData);
     if (!result.ok) {
       setServerError(result.message);
       return;
@@ -34,11 +55,11 @@ export default function ReportPaymentForm({ membershipId }: { membershipId: stri
     reset({
       monto: undefined,
       fecha_pago: businessDate(),
-      banco_origen: "",
-      referencia: "",
       observacion: "",
       membresia_id: membershipId,
     });
+    setReceipt(null);
+    setFileInputKey((value) => value + 1);
   }
 
   const errorFor = (name: keyof ReportPaymentInput) => errors[name]?.message
@@ -49,7 +70,7 @@ export default function ReportPaymentForm({ membershipId }: { membershipId: stri
     <p className="eyebrow">Verificación manual</p>
     <h2 className="mt-2 text-xl font-semibold">Reportar pago</h2>
     <p className="mt-2 text-sm leading-relaxed text-brand-secondary">
-      El reporte no se considera pagado hasta que el equipo de Gólgota lo apruebe.
+      Adjunta una foto o PDF del comprobante. El pago quedará pendiente hasta ser verificado por Gólgota.
     </p>
     {!membershipId && <p role="alert" className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
       No hay una membresía disponible para asociar. Puedes enviar el reporte, pero deberá revisarse antes de poder aplicarlo.
@@ -64,12 +85,23 @@ export default function ReportPaymentForm({ membershipId }: { membershipId: stri
         <div><label htmlFor="student-payment-date" className="field-label">Fecha del pago *</label>
           <input id="student-payment-date" className="field" type="date" max={businessDate()}
             {...register("fecha_pago")} aria-invalid={Boolean(errors.fecha_pago)} />{errorFor("fecha_pago")}</div>
-        <div><label htmlFor="student-payment-bank" className="field-label">Banco u origen *</label>
-          <input id="student-payment-bank" className="field" maxLength={120} placeholder="Ej. Banco Pichincha"
-            {...register("banco_origen")} aria-invalid={Boolean(errors.banco_origen)} />{errorFor("banco_origen")}</div>
-        <div><label htmlFor="student-payment-reference" className="field-label">Referencia o comprobante *</label>
-          <input id="student-payment-reference" className="field" maxLength={120} placeholder="Número de transacción"
-            {...register("referencia")} aria-invalid={Boolean(errors.referencia)} />{errorFor("referencia")}</div>
+        <div className="sm:col-span-2"><label htmlFor="student-payment-receipt" className="field-label">Comprobante adjunto *</label>
+          <input key={fileInputKey} id="student-payment-receipt" className="field file:mr-4 file:rounded-lg file:border-0 file:bg-brand-bg file:px-3 file:py-2 file:font-medium file:text-brand-text"
+            type="file" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf"
+            onChange={(event) => {
+              const selected = event.target.files?.[0] ?? null;
+              setReceipt(selected);
+              if (!selected) {
+                setReceiptError("");
+                return;
+              }
+              const validation = validatePaymentReceiptMetadata(selected);
+              setReceiptError(validation.ok ? "" : validation.message);
+            }} aria-invalid={Boolean(receiptError)} />
+          {receipt && <p className="mt-2 text-sm text-brand-secondary">{receipt.name} · {(receipt.size / 1024 / 1024).toFixed(2)} MB</p>}
+          {receiptError && <p className="mt-1.5 text-sm text-red-700">{receiptError}</p>}
+          <p className="mt-1.5 text-xs text-brand-secondary">JPG, JPEG, PNG o PDF. Máximo 5 MB.</p>
+        </div>
         <div className="sm:col-span-2"><label htmlFor="student-payment-note" className="field-label">Observación</label>
           <textarea id="student-payment-note" className="field min-h-24 resize-y" maxLength={1000}
             {...register("observacion")} aria-invalid={Boolean(errors.observacion)} />{errorFor("observacion")}</div>

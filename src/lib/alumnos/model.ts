@@ -4,6 +4,46 @@ import { businessDate } from "@/lib/clientes/model";
 export const reportStates = ["PENDIENTE", "APROBADO", "RECHAZADO"] as const;
 export type ReportState = (typeof reportStates)[number];
 
+export const paymentReceiptMaxBytes = 5 * 1024 * 1024;
+export const paymentReceiptMimeTypes = ["image/jpeg", "image/png", "application/pdf"] as const;
+export type PaymentReceiptMime = (typeof paymentReceiptMimeTypes)[number];
+
+const receiptExtensions: Record<string, { mime: PaymentReceiptMime; storedExtension: "jpg" | "png" | "pdf" }> = {
+  jpg: { mime: "image/jpeg", storedExtension: "jpg" },
+  jpeg: { mime: "image/jpeg", storedExtension: "jpg" },
+  png: { mime: "image/png", storedExtension: "png" },
+  pdf: { mime: "application/pdf", storedExtension: "pdf" },
+};
+
+export function validatePaymentReceiptMetadata(file: { name: string; type: string; size: number }) {
+  if (!file.name || file.name.length > 255 || /[\\/\0]/.test(file.name)) {
+    return { ok: false as const, message: "El nombre del archivo no es válido." };
+  }
+  const extension = file.name.split(".").pop()?.toLocaleLowerCase("en-US") ?? "";
+  const allowed = receiptExtensions[extension];
+  if (!allowed) {
+    return { ok: false as const, message: "Adjunta un archivo JPG, JPEG, PNG o PDF." };
+  }
+  const normalizedMime = file.type.toLocaleLowerCase("en-US");
+  if (normalizedMime !== allowed.mime) {
+    return { ok: false as const, message: "El tipo del archivo no coincide con su extensión." };
+  }
+  if (!Number.isSafeInteger(file.size) || file.size <= 0) {
+    return { ok: false as const, message: "El comprobante está vacío o no se pudo leer." };
+  }
+  if (file.size > paymentReceiptMaxBytes) {
+    return { ok: false as const, message: "El comprobante no puede superar 5 MB." };
+  }
+  return { ok: true as const, mime: allowed.mime, storedExtension: allowed.storedExtension, size: file.size };
+}
+
+export function hasExpectedPaymentReceiptSignature(bytes: Uint8Array, mime: PaymentReceiptMime) {
+  const startsWith = (signature: number[]) => signature.every((value, index) => bytes[index] === value);
+  if (mime === "image/jpeg") return startsWith([0xff, 0xd8, 0xff]);
+  if (mime === "image/png") return startsWith([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  return startsWith([0x25, 0x50, 0x44, 0x46, 0x2d]);
+}
+
 export const reportPaymentSchema = z.object({
   monto: z.number({ error: "Ingresa un monto válido." })
     .finite("Ingresa un monto válido.")
@@ -12,8 +52,6 @@ export const reportPaymentSchema = z.object({
     .refine((value) => Number(value.toFixed(2)) === value, "Usa máximo dos decimales."),
   fecha_pago: z.iso.date({ error: "Ingresa una fecha válida." })
     .refine((value) => value <= businessDate(), "La fecha de pago no puede ser futura."),
-  banco_origen: z.string().trim().min(2, "Indica el banco u origen.").max(120, "Máximo 120 caracteres."),
-  referencia: z.string().trim().min(2, "Indica la referencia o comprobante.").max(120, "Máximo 120 caracteres."),
   observacion: z.string().trim().max(1000, "Máximo 1000 caracteres."),
   membresia_id: z.string().uuid().nullable(),
 }).strict();
@@ -48,8 +86,11 @@ const reportSchema = z.object({
   membresia_id: z.string().uuid().nullable(),
   monto: z.coerce.number(),
   fecha_pago: z.string(),
-  banco_origen: z.string(),
-  referencia: z.string(),
+  banco_origen: nullableText,
+  referencia: nullableText,
+  comprobante_path: nullableText,
+  comprobante_mime: nullableText,
+  comprobante_size: z.coerce.number().int().positive().nullable(),
   observacion: nullableText,
   estado: z.enum(reportStates),
   created_at: z.string(),
@@ -82,8 +123,11 @@ export type AdminPaymentReport = {
   membresia_id: string | null;
   monto: number;
   fecha_pago: string;
-  banco_origen: string;
-  referencia: string;
+  banco_origen: string | null;
+  referencia: string | null;
+  comprobante_path: string | null;
+  comprobante_mime: string | null;
+  comprobante_size: number | null;
   observacion: string | null;
   estado: ReportState;
   created_at: string;
@@ -108,8 +152,11 @@ const adminPaymentReportSchema = z.object({
   membresia_id: z.string().uuid().nullable(),
   monto: z.coerce.number(),
   fecha_pago: z.string(),
-  banco_origen: z.string(),
-  referencia: z.string(),
+  banco_origen: nullableText,
+  referencia: nullableText,
+  comprobante_path: nullableText,
+  comprobante_mime: nullableText,
+  comprobante_size: z.coerce.number().int().positive().nullable(),
   observacion: nullableText,
   estado: z.enum(reportStates),
   created_at: z.string(),
@@ -143,8 +190,9 @@ export function filterAdminPaymentReports(
     return normalizeSearch([
       report.alumno,
       report.membresia ?? "",
-      report.banco_origen,
-      report.referencia,
+      report.banco_origen ?? "",
+      report.referencia ?? "",
+      report.observacion ?? "",
     ].join(" ")).includes(normalizedQuery);
   });
 }
