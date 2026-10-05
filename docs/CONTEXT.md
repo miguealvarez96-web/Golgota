@@ -105,6 +105,12 @@ El BLOQUE 6 incorpora un aviso público provisional y versionado, evidencia de l
 
 La migración `20261004_privacidad_lopdp_v1.sql` está preparada pero no aplicada. El contenido legal sigue siendo provisional: razón social, RUC, domicilio, contacto, bases, retención, proveedores y transferencias requieren definición y validación legal/administrativa. `docs/PRIVACIDAD.md` contiene el inventario y la auditoría de minimización, sin afirmar cumplimiento total.
 
+## Cierre técnico de producción
+
+El BLOQUE FINAL revisa la aplicación completa sin añadir SQL. La navegación visible queda limitada por rol: admin/owner acceden a los módulos terminados; staff recibe solo Dashboard operativo, Clientes, WOD y Comunicados; alumno dispone de Portal, Privacidad y cierre de sesión. Las rutas placeholder de Asistencia y Gastos se conservan por compatibilidad, pero ya no se enlazan.
+
+Login y recuperación manejan también excepciones de red, existen estados de carga y límites de error para ambos portales, y la aplicación incorpora una página 404 coherente con la identidad visual. `scripts/verificar-produccion.ps1` comprueba el build, rutas críticas, PWA, iconos, navegación, variables públicas y ausencia de secretos evidentes. El estado operativo, las dependencias de Supabase y los pendientes externos se consolidan en `docs/ESTADO-FINAL.md`.
+
 ## Commits relevantes
 
 - `7e4f0b5` — `docs: add Codex project rules`: agrega `AGENTS.md` con las reglas del proyecto.

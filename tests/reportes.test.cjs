@@ -54,7 +54,7 @@ test('admin y owner acceden; staff, alumno e inactivos quedan bloqueados en serv
   assert.equal(await accessFor('alumno'), null);
   assert.equal(await accessFor('owner', false), null);
   assert.match(page, /getReportAccess\(\)[\s\S]*if \(!access\) redirect\("\/"\)/);
-  assert.match(navigation, /role === "staff"[\s\S]*"\/reportes"/);
+  assert.match(navigation, /staffSections = new Set\(\["\/", "\/clientes", "\/wod", "\/comunicados"\]\)/);
 });
 
 test('filtros Hoy, este mes, mes anterior y rango personalizado usan fechas Ecuador', () => {

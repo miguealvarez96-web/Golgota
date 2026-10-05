@@ -8,7 +8,7 @@ La prioridad es avanzar rapido sin duplicar sistemas.
 
 ## Fase 1 - Consolidar portal interno
 
-Estado: EN PROGRESO
+Estado: CÓDIGO COMPLETO, LISTO PARA CIERRE CONTROLADO
 
 Incluye:
 
@@ -21,11 +21,9 @@ Incluye:
 - permisos STAFF;
 - documentacion tecnica base.
 
-Pendientes:
+El BLOQUE FINAL completó la auditoría transversal de navegación, autenticación, errores, estados vacíos, responsive, PWA, seguridad, documentación y automatización de producción. El logo oficial ya está consolidado. Asistencia y captura de Gastos permanecen fuera de navegación hasta que exista una decisión funcional específica.
 
-- cerrar modulos internos aun incompletos;
-- revisar logo definitivo;
-- completar pruebas funcionales restantes.
+Pendientes externos: aplicar y verificar las migraciones preparadas, probar cuentas reales por rol, completar datos legales, configurar Vercel y ejecutar la prueba manual final en dispositivos reales.
 
 ## Fase 2 - Portal del alumno
 

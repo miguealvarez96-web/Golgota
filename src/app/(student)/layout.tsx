@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import Brand from "@/components/layout/brand";
 import LogoutButton from "@/components/layout/logout-button";
@@ -12,9 +13,13 @@ export default async function StudentLayout({ children }: { children: ReactNode 
     <header className="border-b border-brand-border bg-brand-surface">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-8 sm:py-5">
         <Brand subtitle="Portal del alumno" />
-        <div className="flex min-w-0 items-center gap-4">
+        <div className="flex min-w-0 flex-wrap items-center justify-end gap-2 sm:gap-4">
           <div className="hidden min-w-0 text-right sm:block"><p className="truncate text-sm font-medium">{access.name}</p>
             <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-secondary">Alumno</p></div>
+          <nav aria-label="Navegación del alumno" className="flex items-center gap-2">
+            <Link href="/portal" className="btn-secondary">Mi portal</Link>
+            <Link href="/privacidad" className="btn-secondary">Privacidad</Link>
+          </nav>
           <LogoutButton />
         </div>
       </div>

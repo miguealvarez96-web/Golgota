@@ -8,22 +8,22 @@ const sections: { title: string; href: string; icon: PortalIconName }[] = [
   { title: "Dashboard", href: "/", icon: "dashboard" },
   { title: "Clientes", href: "/clientes", icon: "clients" },
   { title: "Membresías", href: "/membresias", icon: "membership" },
+  { title: "Productos", href: "/productos", icon: "products" },
+  { title: "Pagos reportados", href: "/pagos-reportados", icon: "payments" },
   { title: "WOD", href: "/wod", icon: "wod" },
   { title: "Comunicados", href: "/comunicados", icon: "announcements" },
-  { title: "Pagos reportados", href: "/pagos-reportados", icon: "payments" },
-  { title: "Asistencia", href: "/asistencia", icon: "attendance" },
-  { title: "Productos", href: "/productos", icon: "products" },
-  { title: "Gastos", href: "/gastos", icon: "expenses" },
   { title: "Reportes", href: "/reportes", icon: "reports" },
   { title: "Privacidad", href: "/solicitudes-privacidad", icon: "privacy" },
 ];
+
+const staffSections = new Set(["/", "/clientes", "/wod", "/comunicados"]);
 
 export default function PortalNavigation({ role }: { role: string }) {
   const pathname = usePathname();
 
   const visibleSections =
     role === "staff"
-      ? sections.filter(({ href }) => !["/gastos", "/reportes", "/pagos-reportados", "/solicitudes-privacidad"].includes(href))
+      ? sections.filter(({ href }) => staffSections.has(href))
       : sections;
 
   return (

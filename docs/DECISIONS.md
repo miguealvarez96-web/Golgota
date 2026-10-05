@@ -162,6 +162,14 @@ Las solicitudes de titulares no ejecutan borrado ni edición automática: quedan
 
 El aviso público se considera provisional hasta completar los datos del responsable y validar jurídicamente bases, conservación, proveedores y transferencias. No se declara cumplimiento total de la LOPDP.
 
+## Cierre de producción
+
+La navegación se define mediante listas permitidas por rol. Staff ve únicamente Dashboard operativo, Clientes, WOD y Comunicados; los enlaces financieros, administrativos y los placeholders no se muestran. Las rutas históricas de Asistencia y Gastos se conservan para no romper referencias, sin presentarlas como módulos terminados.
+
+El BLOQUE FINAL no crea ni aplica SQL. Su macro se detiene si Git detecta cualquier archivo SQL nuevo o modificado, aísla el staging a los archivos del cierre y exige confirmaciones independientes para commit/push y deploy. El checklist de producción inspecciona artefactos del build, rutas, PWA, recursos visuales, variables públicas y referencias sensibles sin imprimir secretos.
+
+Un build correcto no demuestra que las migraciones estén aplicadas en Supabase ni que Vercel tenga su entorno configurado. Esas verificaciones siguen siendo puertas externas obligatorias antes de declarar la operación productiva.
+
 ## Forma de trabajo
 
 Trabajar una sola tarea a la vez.

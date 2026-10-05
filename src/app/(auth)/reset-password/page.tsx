@@ -29,23 +29,20 @@ export default function ResetPasswordPage() {
     }
 
     setLoading(true);
-
-    const { error: updateError } = await supabase.auth.updateUser({
-      password,
-    });
-
-    if (updateError) {
-      setError(
-        "No fue posible actualizar la contraseña. Solicita un nuevo enlace."
-      );
+    try {
+      const { error: updateError } = await supabase.auth.updateUser({ password });
+      if (updateError) {
+        setError("No fue posible actualizar la contraseña. Solicita un nuevo enlace.");
+        return;
+      }
+      await supabase.auth.signOut();
+      router.push("/login");
+      router.refresh();
+    } catch {
+      setError("No fue posible actualizar la contraseña. Comprueba tu conexión e inténtalo de nuevo.");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    await supabase.auth.signOut();
-
-    router.push("/login");
-    router.refresh();
   }
 
   return (
@@ -101,7 +98,7 @@ export default function ResetPasswordPage() {
           </div>
 
           {error && (
-            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
               {error}
             </div>
           )}

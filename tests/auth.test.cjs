@@ -27,7 +27,7 @@ function loginHarness(signIn, source) {
   let cursor = 0;
   const navigations = [];
   const { default: Login } = load('src/app/(auth)/login/page.tsx', {
-    react: { ...require('react'), useState: () => { const i = cursor++; return [states[i], (value) => { states[i] = value; }]; } },
+    react: { ...require('react'), useEffect() {}, useState: () => { const i = cursor++; return [states[i], (value) => { states[i] = value; }]; } },
     '@/components/layout/brand': () => null,
     '@/lib/supabase/client': { createClient: () => ({ auth: { signInWithPassword: signIn } }) },
     'test-window': { location: { replace: (url) => navigations.push(url) } },

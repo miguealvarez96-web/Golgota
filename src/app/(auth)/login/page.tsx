@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { z } from "zod";
 
 import Brand from "@/components/layout/brand";
@@ -24,6 +24,12 @@ export default function LoginPage() {
 
   const [loading, setLoading] = useState(false);
   const [recoveryLoading, setRecoveryLoading] = useState(false);
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("error") === "callback") {
+      setError("El enlace no es válido o ya venció. Solicita uno nuevo.");
+    }
+  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -86,26 +92,21 @@ export default function LoginPage() {
     }
 
     setRecoveryLoading(true);
-
-    const { error: recoveryError } =
-      await supabase.auth.resetPasswordForEmail(
+    try {
+      const { error: recoveryError } = await supabase.auth.resetPasswordForEmail(
         emailValidation.data,
-        {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        }
+        { redirectTo: `${window.location.origin}/auth/callback` }
       );
-
-    if (recoveryError) {
-      setError("No fue posible enviar el correo de recuperación.");
+      if (recoveryError) {
+        setError("No fue posible enviar el correo de recuperación.");
+        return;
+      }
+      setMessage("Revisa tu correo. Te enviamos un enlace para crear una nueva contraseña.");
+    } catch {
+      setError("No fue posible enviar el correo de recuperación. Comprueba tu conexión e inténtalo de nuevo.");
+    } finally {
       setRecoveryLoading(false);
-      return;
     }
-
-    setMessage(
-      "Revisa tu correo. Te enviamos un enlace para crear una nueva contraseña."
-    );
-
-    setRecoveryLoading(false);
   }
 
   return (
