@@ -40,6 +40,7 @@ export async function middleware(request: NextRequest) {
 
   const publicRoutes =
     pathname === "/login" ||
+    pathname === "/registro" ||
     pathname === "/reset-password" ||
     pathname === "/offline" ||
     pathname === "/privacidad" ||

@@ -19,11 +19,22 @@ export function normalizeClientPhone(value: string) {
   return raw ? raw.replace(/[ \t\r\n\f\v()-]/g, "") : null;
 }
 
+export const clientNameSchema = z.string().transform(normalizeClientName).pipe(z.string()
+  .min(2, "Ingresa al menos 2 caracteres.").max(255, "Máximo 255 caracteres.")
+  .regex(namePattern, "Usa letras, espacios, guion o apóstrofe; sin números ni símbolos."));
+export const clientIdentificationSchema = z.string().trim()
+  .regex(/^[0-9]{1,20}$/, "Para cédula, usa solo dígitos (máximo 20).");
+export const clientPhoneSchema = z.string().max(64, "El teléfono ingresado es demasiado largo.")
+  .transform(normalizeClientPhone)
+  .refine((value) => value !== null && /^\+?[0-9]{7,20}$/.test(value) && value.length <= 20,
+    "Usa 7 a 20 dígitos y, si corresponde, un + inicial.");
+export const clientEmailSchema = z.string().trim().max(255, "Máximo 255 caracteres.")
+  .transform((value) => value.toLowerCase())
+  .pipe(z.email("Ingresa un correo válido."));
+
 export const clientSchema = z.object({
-  nombre_completo: z.string().transform(normalizeClientName).pipe(z.string()
-    .min(2, "Ingresa al menos 2 caracteres.").max(255, "Máximo 255 caracteres.")
-    .regex(namePattern, "Usa letras, espacios, guion o apóstrofe; sin números ni símbolos.")),
-  cedula: z.string().trim().regex(/^[0-9]{1,20}$/, "Para cédula, usa solo dígitos (máximo 20)."),
+  nombre_completo: clientNameSchema,
+  cedula: clientIdentificationSchema,
   celular: z.string().max(64, "El teléfono ingresado es demasiado largo.")
     .transform(normalizeClientPhone)
     .refine((value) => value === null || (/^\+?[0-9]{7,20}$/.test(value) && value.length <= 20),

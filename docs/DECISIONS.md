@@ -187,6 +187,15 @@ Las solicitudes de titulares no ejecutan borrado ni edición automática: quedan
 
 El aviso público se considera provisional hasta completar los datos del responsable y validar jurídicamente bases, conservación, proveedores y transferencias. No se declara cumplimiento total de la LOPDP.
 
+## Autorregistro público
+
+- El rol no viaja desde el formulario: PostgreSQL asigna siempre `alumno`.
+- Solo identificaciones nuevas se autorregistran. Un cliente histórico, incluso sin vínculo, requiere ayuda y vinculación humana; conocer cédula, correo o teléfono no basta para apropiarse de su ficha.
+- El intento temporal no guarda contraseñas y vence a los 30 minutos. El trigger de Auth crea perfil, cliente, vínculo y aceptación de privacidad dentro de la misma transacción.
+- Altas Auth ajenas al flujo quedan como `alumno` inactivo, nunca con el `staff` predeterminado histórico.
+- No se crean membresías ni pagos. La aceptación obligatoria usa `REGISTRO_PUBLICO`; promociones son opcionales y no premarcadas.
+- Existe limitación básica de cinco intentos por hora por correo o identificación. CAPTCHA y rate limiting por IP/edge quedan como endurecimiento externo pendiente.
+
 ## Cierre de producción
 
 La navegación se define mediante listas permitidas por rol. Staff ve únicamente Dashboard operativo, Clientes, WOD y Comunicados; los enlaces financieros, administrativos y los placeholders no se muestran. Las rutas históricas de Asistencia y Gastos se conservan para no romper referencias, sin presentarlas como módulos terminados.

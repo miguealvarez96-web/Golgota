@@ -83,6 +83,12 @@ No se realizó deploy en esta revisión. Vercel debe tener las variables públic
 
 El macro final ejecuta pruebas, TypeScript, build, revisión Git y checklist; aísla archivos del bloque, solicita confirmación para commit/push y deploy, y usa un proceso robusto para `vercel --prod`.
 
+## BLOQUE 8 — autorregistro público
+
+El código de `/registro`, la migración `20261008_registro_publico_alumnos.sql`, sus verificadores y el macro de cierre están preparados. El alta nueva fuerza rol alumno, no crea membresía ni pagos y registra el aviso versionado. Clientes existentes no se duplican ni se autoasocian: deben activar el acceso con ayuda de Gólgota.
+
+La migración real y el despliegue siguen pendientes de autorización. También quedan como mejoras externas CAPTCHA y rate limiting por IP/edge; el bloque incluye un límite transaccional por correo/identificación. Una vez cerrado y desplegado, el enlace público será `https://golgota.vercel.app/registro`.
+
 ## Pendientes reales antes de operar
 
 1. Ejecutar los dry-run y postflight de bloques con SQL, incluido comprobantes de pago, y autorizar cada aplicación pendiente.

@@ -69,6 +69,14 @@ También están pendientes la razón social o nombre completo del responsable, R
 - El service worker no precarga `/privacidad`; las navegaciones usan red con `no-store` y no persisten páginas autenticadas.
 - No guardar contraseñas ni URL de conexión en archivos, logs o commits. El macro usa únicamente `SUPABASE_DB_URL` en memoria.
 
+## Registro público de alumnos
+
+El alta pública registra la versión vigente, `accepted_at`, contexto `REGISTRO_PUBLICO`, lectura obligatoria y consentimiento promocional separado. La promoción permanece desmarcada por defecto. La contraseña se entrega únicamente a Supabase Auth y nunca se guarda en tablas públicas ni en el intento temporal.
+
+Los intentos conservan nombre, identificación, teléfono, correo y preferencias durante el proceso para completar el alta de forma recuperable. Vencen operativamente a los 30 minutos y no tienen políticas ni privilegios de lectura directa para `anon` o `authenticated`. La definición formal de retención y depuración de estos intentos requiere validación legal/administrativa; no se implementa borrado automático en este bloque.
+
+El control de abuso incluido limita intentos por correo o identificación. No se capturan IP ni huellas del dispositivo. CAPTCHA y limitación en edge/proveedor quedan pendientes para una fase de endurecimiento.
+
 ## Pendientes antes de publicación definitiva
 
 - Completar y aprobar todos los marcadores `[PENDIENTE DE DEFINICIÓN Y VALIDACIÓN LEGAL/ADMINISTRATIVA]`.

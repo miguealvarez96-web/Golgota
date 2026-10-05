@@ -122,6 +122,14 @@ El BLOQUE 6 incorpora un aviso público provisional y versionado, evidencia de l
 
 La migración `20261004_privacidad_lopdp_v1.sql` está preparada pero no aplicada. El contenido legal sigue siendo provisional: razón social, RUC, domicilio, contacto, bases, retención, proveedores y transferencias requieren definición y validación legal/administrativa. `docs/PRIVACIDAD.md` contiene el inventario y la auditoría de minimización, sin afirmar cumplimiento total.
 
+## Autorregistro público de alumnos — BLOQUE 8
+
+`/registro` ofrece alta pública móvil sin solicitar membresía, plan, pagos, valores financieros ni rol. El servidor normaliza los datos con las mismas reglas de Clientes y fuerza el rol `alumno`.
+
+Para una identificación nueva se crea un intento temporal sin contraseña. Supabase Auth consume su token y el trigger completa en una transacción el perfil `public.usuarios`, el cliente, `clientes.auth_user_id` y la aceptación de privacidad. Con confirmación de correo activa se muestra la instrucción de revisar el correo; sin ella, la sesión navega directamente a `/portal`.
+
+Una identificación existente nunca se duplica ni se vincula automáticamente: se indica solicitar ayuda a Gólgota y se reutiliza la operación administrativa de vinculación. Una cuenta ya vinculada o un correo Auth existente también se bloquean con mensajes sin datos privados. El enlace compartible, después de aplicar SQL y desplegar, será `https://golgota.vercel.app/registro`.
+
 ## Cierre técnico de producción
 
 El BLOQUE FINAL revisa la aplicación completa sin añadir SQL. La navegación visible queda limitada por rol: admin/owner acceden a los módulos terminados; staff recibe solo Dashboard operativo, Clientes, WOD y Comunicados; alumno dispone de Portal, Privacidad y cierre de sesión. Las rutas placeholder de Asistencia y Gastos se conservan por compatibilidad, pero ya no se enlazan.

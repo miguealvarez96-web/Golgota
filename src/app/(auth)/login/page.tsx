@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import Link from "next/link";
 import { z } from "zod";
 
 import Brand from "@/components/layout/brand";
@@ -207,6 +208,7 @@ export default function LoginPage() {
               ? "Iniciando sesión..."
               : "Iniciar sesión"}
           </button>
+          <Link href="/registro" className="btn-secondary min-h-12 w-full">Crear cuenta de alumno</Link>
         </form>
         <p className="mt-6 text-center text-xs leading-5 text-brand-secondary">Al usar la plataforma puedes consultar cómo tratamos los datos en el <a href="/privacidad" className="font-medium text-brand-text underline decoration-brand-copper/60 underline-offset-4">aviso de privacidad</a>.</p>
         </div>
