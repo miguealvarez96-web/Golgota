@@ -60,7 +60,15 @@ dry-run y autorizar las migraciones reales.
 
 ## Dashboard
 
-El Dashboard de `admin` y `owner` contiene cinco KPI: clientes activos, membresías vigentes, membresías por vencer, ingresos del mes y pagos pendientes. La vista `v_dashboard_kpis` centraliza estos valores y usa la fecha de negocio de `America/Guayaquil`. `staff` recibe un panel operativo en construcción; la página no consulta la vista financiera.
+El Dashboard de `admin` y `owner` contiene cinco KPI: clientes activos, membresías vigentes, membresías por vencer, ingresos del mes y pagos pendientes. La vista `v_dashboard_kpis` centraliza estos valores y usa la fecha de negocio de `America/Guayaquil`.
+
+El Dashboard de `staff` es exclusivamente operativo: búsqueda rápida de alumnos, próximos a vencer, vencidos, WOD publicado del día, comunicados recientes y acceso a crear cliente. Usa `v_membresias_verificacion` y no consulta pagos, saldos, abonos, ingresos ni `v_dashboard_kpis`.
+
+## Portal Coach / Staff
+
+El BLOQUE 3 está completo en código y preparado para dry-run SQL. La búsqueda de clientes muestra plan, inicio, vencimiento y los estados `POR INICIAR`, `VIGENTE`, `POR VENCER`, `VENCE HOY` y `VENCIDA` mediante una proyección operativa sin columnas financieras. Staff conserva el alta de clientes, pero no puede editar, inactivar, crear o renovar membresías ni entrar a pagos, gastos o reportes financieros.
+
+`/wod` y `/comunicados` son módulos responsive. Admin y owner crean, editan y publican; staff solo consulta contenido publicado. RLS y permisos de columna aplican la misma separación en PostgreSQL, y alumno no recibe acceso al portal coach. La migración `20261004_coaches_completos_v1.sql` aún no se ha aplicado.
 
 ## Permisos de STAFF probados
 

@@ -1,5 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import CoachDashboard from "@/components/coaches/coach-dashboard";
+import { businessDate } from "@/lib/clientes/model";
+import { loadCoachDashboard } from "@/lib/coaches/data";
 
 export default async function HomePage() {
   const supabase = createClient();
@@ -29,14 +32,12 @@ export default async function HomePage() {
   }
 
   if (perfil.rol === "staff") {
-    return (
-      <main className="portal-page">
-        <div className="panel p-6">
-          <h1 className="page-title">Panel operativo</h1>
-          <p className="mt-3 text-brand-secondary">Panel en construcción</p>
-        </div>
-      </main>
-    );
+    try {
+      const data = await loadCoachDashboard(supabase, businessDate());
+      return <CoachDashboard data={data} />;
+    } catch {
+      return <main className="portal-page"><h1 className="page-title">Panel operativo</h1><div className="panel mt-6 p-6"><p role="alert" className="text-brand-secondary">No fue posible cargar el panel. Si la migración del BLOQUE 3 está pendiente, aplícala después de su dry-run.</p></div></main>;
+    }
   }
 
   const { data: kpis, error } = await supabase

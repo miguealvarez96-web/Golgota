@@ -23,6 +23,8 @@ Staff puede:
 - consultar informacion operativa;
 - consultar membresia;
 - consultar vigencia y vencimiento.
+- consultar WOD publicado del dia;
+- consultar comunicados publicados.
 
 Staff no puede:
 
@@ -36,6 +38,14 @@ Staff no puede:
 - renovar membresias;
 - acceder a Gastos;
 - acceder a Reportes financieros.
+
+## Portal Coach
+
+`staff` representa operativamente al coach. Su dashboard prioriza búsqueda de alumnos, vigencias urgentes, WOD y comunicados, sin KPI financieros.
+
+WOD y comunicados V1 se administran únicamente por `admin` y `owner`. Staff tiene lectura de contenido publicado. Alumno no hereda acceso de coach. No se permite borrado desde la aplicación y la autorización se aplica también con RLS y permisos de columna.
+
+La proyección `v_membresias_verificacion` es la única fuente de vigencia para staff. Incluye plan y fechas, pero nunca valor, abono, saldo, estado de pago ni historial de pagos.
 
 ## Seguridad
 

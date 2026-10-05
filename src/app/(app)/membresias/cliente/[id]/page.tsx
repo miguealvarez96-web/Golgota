@@ -80,7 +80,7 @@ function MembershipCard({ row, plan, clientId, payments, staff }: {
       <div className="flex flex-wrap gap-2"><VigencyBadge state={state} />{cancelled && <span className="rounded-full border border-brand-border bg-brand-bg px-3 py-1 text-xs font-semibold">CANCELADA</span>}</div>
     </div>
     <dl className={`mt-5 grid gap-4 border-t border-brand-border pt-4 text-sm sm:grid-cols-2 ${staff ? "lg:grid-cols-2" : "lg:grid-cols-4"}`}>
-      {!staff && <Metric label="Inicio" value={"fecha_inicio" in row ? displayDate(row.fecha_inicio) : "—"} />}
+      <Metric label="Inicio" value={displayDate(row.fecha_inicio)} />
       <Metric label="Vencimiento" value={displayDate(row.fecha_fin)} />
       {!staff && <Metric label="Estado de pago" value={"estado_pago" in row ? row.estado_pago : "—"} />}
       {!staff && <Metric label="Saldo pendiente" value={"saldo" in row ? moneyLabel(Number(row.saldo)) : "—"} />}

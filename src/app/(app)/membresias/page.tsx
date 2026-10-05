@@ -103,7 +103,7 @@ function ClientCard({ group, staff, plans }: {
     </div>
     <dl className={`mt-5 grid gap-4 border-t border-brand-border pt-4 text-sm sm:grid-cols-2 ${staff ? "lg:grid-cols-3" : "lg:grid-cols-6"}`}>
       <Metric label="Plan actual" value={plan} />
-      {!staff && <Metric label="Inicio" value={item && "fecha_inicio" in item ? displayDate(item.fecha_inicio) : "—"} />}
+      <Metric label="Inicio" value={item ? displayDate(item.fecha_inicio) : "—"} />
       <Metric label="Vencimiento" value={item ? displayDate(item.fecha_fin) : "—"} />
       <Metric label="Vigencia" value={state ? vigencyLabel(state) : "Sin membresía"} />
       {!staff && <Metric label="Estado de pago" value={item && "estado_pago" in item ? item.estado_pago : "—"} />}

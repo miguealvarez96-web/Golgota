@@ -1,6 +1,7 @@
 import ClientsManager from "@/components/clientes/clients-manager";
 import { getClientAccess } from "@/lib/clientes/access";
 import { canManageClients, clientStates, clientSearchFilter, type ClientRow, type MembershipSummary } from "@/lib/clientes/model";
+import { chooseOverview, type OperationalMembership } from "@/lib/membresias/grouping";
 
 export default async function ClientesPage({ searchParams }: {
   searchParams: { q?: string; estado?: string; pagina?: string };
@@ -25,19 +26,24 @@ export default async function ClientesPage({ searchParams }: {
     const memberships: Record<string, MembershipSummary> = {};
     const canEdit = canManageClients(access.role);
     let membershipError = false;
-    if (canEdit && data.length) {
-      // Staff nunca consulta esta vista ni recibe datos de membresías/pagos.
-      // No se seleccionan importes ni estado de deuda para el listado.
-      const current = await access.supabase.from("v_membresias_estado")
-        .select("id,cliente_id,estado_vigencia,fecha_fin", { count: "exact" })
+    if (data.length) {
+      // Proyección operativa aislada: no contiene importes, pagos ni saldos.
+      const current = await access.supabase.from("v_membresias_verificacion")
+        .select("membresia_id,cliente_id,plan,fecha_inicio,fecha_fin,estado_vigencia", { count: "exact" })
         .in("cliente_id", data.map((client) => client.id))
-        .neq("estado_pago", "CANCELADA")
-        .in("estado_vigencia", ["VIGENTE", "POR_VENCER", "VENCE_HOY"])
-        .order("fecha_fin", { ascending: false });
+        .order("fecha_fin", { ascending: true });
       membershipError = Boolean(current.error) || current.count === null || current.count !== current.data?.length;
       if (!membershipError) {
-        for (const membership of current.data ?? []) {
-          memberships[membership.cliente_id] ??= { id: membership.id, estado_vigencia: membership.estado_vigencia, fecha_fin: membership.fecha_fin };
+        for (const client of data) {
+          const rows = (current.data ?? []).filter((row) => row.cliente_id === client.id) as (OperationalMembership & { membresia_id: string })[];
+          const membership = chooseOverview(rows);
+          if (membership) memberships[client.id] = {
+            id: membership.membresia_id,
+            plan: membership.plan,
+            fecha_inicio: membership.fecha_inicio,
+            fecha_fin: membership.fecha_fin,
+            estado_vigencia: membership.estado_vigencia ?? "POR_INICIAR",
+          };
         }
       }
     }

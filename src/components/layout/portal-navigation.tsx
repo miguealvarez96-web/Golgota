@@ -8,6 +8,8 @@ const sections: { title: string; href: string; icon: PortalIconName }[] = [
   { title: "Dashboard", href: "/", icon: "dashboard" },
   { title: "Clientes", href: "/clientes", icon: "clients" },
   { title: "Membresías", href: "/membresias", icon: "membership" },
+  { title: "WOD", href: "/wod", icon: "wod" },
+  { title: "Comunicados", href: "/comunicados", icon: "announcements" },
   { title: "Pagos reportados", href: "/pagos-reportados", icon: "payments" },
   { title: "Asistencia", href: "/asistencia", icon: "attendance" },
   { title: "Productos", href: "/productos", icon: "products" },

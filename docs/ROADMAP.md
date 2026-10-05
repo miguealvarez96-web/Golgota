@@ -112,7 +112,7 @@ Antes de abrir el portal a muchos alumnos, revisar esta fase.
 
 ## Fase 6 - Coach / Staff operativo
 
-Estado: PENDIENTE
+Estado: BLOQUE 3 COMPLETO, PREPARADO PARA DRY-RUN SQL
 
 Funciones previstas:
 
@@ -127,6 +127,18 @@ Funciones previstas:
 - asistencia.
 
 Mantener fuera de Staff toda informacion financiera.
+
+Implementado en BLOQUE 3:
+
+- dashboard operativo responsive;
+- búsqueda de alumnos con plan, fechas y cinco estados de vigencia;
+- alertas de próximos a vencer y vencidos;
+- creación de clientes con las validaciones existentes;
+- WOD administrado por admin/owner y publicado para staff;
+- comunicados administrados por admin/owner y publicados para staff;
+- RLS, permisos de columna, preflight, postflight, rollback, dry-run y macro de cierre.
+
+Pendiente únicamente: ejecutar dry-run autorizado, aplicar la migración, validar postflight, commit/push y despliegue mediante el macro.
 
 ## Fase 7 - Reportes y gestion
 

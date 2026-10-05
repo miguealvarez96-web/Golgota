@@ -189,7 +189,7 @@ test('owner carga membresías financieras e historial de pagos', async () => {
   assert.deepEqual(calls.slice(3), ['historial financiero', 'historial planes', 'pagos']);
 });
 
-test('Dashboard consulta cinco KPI solo para admin y owner; staff no consulta finanzas', async () => {
+test('Dashboard consulta cinco KPI solo para admin y owner; staff carga solo panel operativo', async () => {
   const kpis = { clientes_activos: 1, membresias_vigentes: 2, membresias_por_vencer: 3, ingresos_mes: 4, pagos_pendientes: 5 };
   for (const role of ['admin', 'owner', 'staff', 'otro']) {
     const calls = [];
@@ -204,9 +204,12 @@ test('Dashboard consulta cinco KPI solo para admin y owner; staff no consulta fi
     };
     const { default: Page } = load('src/app/(app)/page.tsx', {
       '@/lib/supabase/server': { createClient() { return supabase; } },
+      '@/lib/clientes/model': clientsModel,
+      '@/lib/coaches/data': { async loadCoachDashboard() { calls.push('coach_dashboard'); return { expiring: [], expired: [], wod: null, announcements: [] }; } },
+      '@/components/coaches/coach-dashboard': () => null,
     });
     const rendered = JSON.stringify(await Page());
-    assert.deepEqual(calls, role === 'admin' || role === 'owner' ? ['usuarios', 'v_dashboard_kpis'] : ['usuarios']);
+    assert.deepEqual(calls, role === 'admin' || role === 'owner' ? ['usuarios', 'v_dashboard_kpis'] : role === 'staff' ? ['usuarios', 'coach_dashboard'] : ['usuarios']);
     if (role === 'admin' || role === 'owner') {
       for (const label of ['Clientes activos', 'Membresías vigentes', 'Membresías por vencer', 'Ingresos del mes', 'Pagos pendientes']) {
         assert.ok(rendered.includes(label), `${role}: falta ${label}`);

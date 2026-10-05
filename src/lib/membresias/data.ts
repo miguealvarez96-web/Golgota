@@ -23,7 +23,7 @@ export async function loadOperationalMemberships(supabase: Database, clientId?: 
   const rows: OperationalMembership[] = [];
   for (let offset = 0; ; offset += batchSize) {
     let request = supabase.from("v_membresias_verificacion")
-      .select("cliente_id,plan,fecha_fin,estado_vigencia")
+      .select("membresia_id,cliente_id,plan,fecha_inicio,fecha_fin,estado_vigencia")
       .order("cliente_id").order("fecha_fin").range(offset, offset + batchSize - 1);
     if (clientId) request = request.eq("cliente_id", clientId);
     const { data, error } = await request;

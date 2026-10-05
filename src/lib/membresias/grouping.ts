@@ -4,7 +4,7 @@ export type MembershipBase = { cliente_id: string; fecha_fin: string; estado_vig
 export type FinancialMembership = MembershipBase & {
   id: string; plan_id: string; fecha_inicio: string; saldo: number; estado_pago: string;
 };
-export type OperationalMembership = MembershipBase & { plan: string };
+export type OperationalMembership = MembershipBase & { membresia_id: string; plan: string; fecha_inicio: string };
 export type ClientIdentity = { id: string; nombre_completo: string; cedula: string };
 export type ClientMembershipGroup<T extends MembershipBase> = {
   client: ClientIdentity; memberships: T[]; overview: T | null;
