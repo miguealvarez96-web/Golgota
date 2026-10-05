@@ -207,6 +207,7 @@ export default function LoginPage() {
               : "Iniciar sesión"}
           </button>
         </form>
+        <p className="mt-6 text-center text-xs leading-5 text-brand-secondary">Al usar la plataforma puedes consultar cómo tratamos los datos en el <a href="/privacidad" className="font-medium text-brand-text underline decoration-brand-copper/60 underline-offset-4">aviso de privacidad</a>.</p>
         </div>
       </section>
     </main>

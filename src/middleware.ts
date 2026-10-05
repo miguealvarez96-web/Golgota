@@ -42,6 +42,7 @@ export async function middleware(request: NextRequest) {
     pathname === "/login" ||
     pathname === "/reset-password" ||
     pathname === "/offline" ||
+    pathname === "/privacidad" ||
     pathname.startsWith("/auth/callback");
 
   if (!user && !publicRoutes) {

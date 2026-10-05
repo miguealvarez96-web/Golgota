@@ -9,6 +9,7 @@ const paths = {
   payments: "M3 6h18v12H3z M3 10h18 M7 15h4",
   wod: "M5 3v18 M19 3v18 M2 8h6 M16 8h6 M8 6v4 M16 6v4 M8 17h8",
   announcements: "M3 11v2 M6 9l10-4v14L6 15z M6 15l2 6h4l-2-7 M19 9a4 4 0 0 1 0 6",
+  privacy: "M12 3 19 6v5c0 4.6-2.8 8.1-7 10-4.2-1.9-7-5.4-7-10V6z M9 12l2 2 4-4",
   plus: "M12 5v14 M5 12h14",
 } as const;
 

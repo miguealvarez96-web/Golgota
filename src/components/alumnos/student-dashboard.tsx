@@ -2,8 +2,10 @@ import VigencyBadge from "@/components/membresias/vigency-badge";
 import { chooseStudentMembership, moneyLabel, type StudentPortal } from "@/lib/alumnos/model";
 import { displayDate } from "@/lib/clientes/model";
 import ReportPaymentForm from "./report-payment-form";
+import StudentPrivacyPanel from "./student-privacy-panel";
+import type { StudentPrivacyData } from "@/lib/privacidad/model";
 
-export default function StudentDashboard({ data }: { data: StudentPortal }) {
+export default function StudentDashboard({ data, privacy }: { data: StudentPortal; privacy: StudentPrivacyData }) {
   const current = chooseStudentMembership(data.membresias);
   const payableMembership = current && current.estado_pago !== "CANCELADA" && current.saldo > 0 ? current.id : null;
   const firstName = data.cliente.nombre_completo.split(/\s+/)[0];
@@ -66,6 +68,7 @@ export default function StudentDashboard({ data }: { data: StudentPortal }) {
         </article>) : <p className="panel p-5 text-sm text-brand-secondary">Aún no tienes historial de membresías.</p>}
       </div>
     </section>
+    <StudentPrivacyPanel privacy={privacy} />
   </main>;
 }
 

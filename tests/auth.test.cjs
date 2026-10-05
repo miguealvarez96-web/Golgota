@@ -102,9 +102,9 @@ test('login permanece público aun con sesión: no rebota hacia el layout', asyn
   assert.equal(response.headers.get('location'), null);
 });
 
-test('rutas privadas siguen protegidas y las tres rutas auth son públicas', async () => {
+test('rutas privadas siguen protegidas y las rutas de acceso y privacidad son públicas', async () => {
   const middleware = middlewareHarness(null);
-  for (const route of ['/login', '/reset-password', '/auth/callback']) {
+  for (const route of ['/login', '/reset-password', '/auth/callback', '/privacidad']) {
     assert.equal((await middleware(new NextRequest(`http://localhost:3000${route}`))).status, 200);
   }
   for (const route of ['/', '/clientes', '/membresias', '/asistencia', '/productos', '/gastos', '/reportes']) {

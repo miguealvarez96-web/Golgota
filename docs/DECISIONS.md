@@ -156,20 +156,11 @@ Las vigencias se obtienen de `v_membresias_estado` y de las utilidades de membre
 
 ## Privacidad y LOPDP
 
-La Ley Organica de Proteccion de Datos Personales de Ecuador debe considerarse un requisito del proyecto.
+La aceptación registra la lectura de una versión del aviso y no se usa como consentimiento universal. Las comunicaciones promocionales se mantienen como finalidad opcional, separada y no premarcada.
 
-La implementacion sera gradual.
+Las solicitudes de titulares no ejecutan borrado ni edición automática: quedan para revisión humana de admin/owner, con respuesta, revisor, fecha y auditoría. Staff no puede consultar ni gestionar estos registros. Los datos existentes no se eliminan en este bloque; primero se documenta su necesidad, retención y dependencia.
 
-Pendientes:
-
-- inventario de datos personales;
-- finalidades de tratamiento;
-- politica de privacidad;
-- consentimiento cuando corresponda;
-- derechos de los titulares;
-- retencion y eliminacion;
-- proveedores y transferencias;
-- seguridad y trazabilidad.
+El aviso público se considera provisional hasta completar los datos del responsable y validar jurídicamente bases, conservación, proveedores y transferencias. No se declara cumplimiento total de la LOPDP.
 
 ## Forma de trabajo
 

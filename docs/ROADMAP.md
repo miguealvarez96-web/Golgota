@@ -106,22 +106,19 @@ Pendiente únicamente: autorizar commit/push y despliegue mediante el macro del 
 
 ## Fase 5 - Privacidad y LOPDP
 
-Estado: PENDIENTE
+Estado: BLOQUE 6 TÉCNICAMENTE COMPLETO, PREPARADO PARA DRY-RUN SQL Y VALIDACIÓN LEGAL
 
-Trabajar gradualmente:
+Implementado:
 
-- inventario de datos personales;
-- finalidad de cada dato;
-- politica de privacidad;
-- consentimiento cuando corresponda;
-- derechos de titulares;
-- retencion y eliminacion;
-- proveedores;
-- transferencias;
-- seguridad;
-- trazabilidad.
+- aviso público provisional, versionado y accesible;
+- evidencia de lectura y preferencia promocional separada;
+- área del alumno con historial y solicitudes de derechos;
+- bandeja admin/owner con estados, respuesta y trazabilidad;
+- bloqueo de staff, RLS, RPC y permisos sin escrituras directas;
+- auditoría, preflight, postflight, rollback, dry-run y macro de cierre;
+- inventario técnico y auditoría de minimización sin borrado destructivo.
 
-Antes de abrir el portal a muchos alumnos, revisar esta fase.
+Pendiente: completar los datos institucionales, validar jurídicamente el aviso, ejecutar el dry-run autorizado y aplicar la migración solo con autorización explícita.
 
 ## Fase 6 - Coach / Staff operativo
 

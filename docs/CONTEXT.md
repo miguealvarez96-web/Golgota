@@ -101,18 +101,9 @@ El service worker conserva únicamente assets públicos y el fallback offline. L
 
 ## Privacidad y LOPDP
 
-Gólgota debe considerar el cumplimiento de la Ley Orgánica de Protección de Datos Personales de Ecuador. Queda pendiente trabajar gradualmente:
+El BLOQUE 6 incorpora un aviso público provisional y versionado, evidencia de lectura, consentimiento promocional opcional y separado, solicitudes del titular y una bandeja de revisión exclusiva de admin/owner. Alumno solo consulta y crea registros propios; staff no accede. RLS, RPC, permisos y auditoría refuerzan estas reglas en PostgreSQL, sin eliminación automática.
 
-- inventario de datos personales;
-- finalidades de tratamiento;
-- política de privacidad;
-- consentimiento cuando corresponda;
-- derechos de los titulares;
-- retención y eliminación;
-- proveedores y transferencias;
-- seguridad y trazabilidad.
-
-No se ha implementado todavía trabajo específico de LOPDP; queda documentado como requisito pendiente.
+La migración `20261004_privacidad_lopdp_v1.sql` está preparada pero no aplicada. El contenido legal sigue siendo provisional: razón social, RUC, domicilio, contacto, bases, retención, proveedores y transferencias requieren definición y validación legal/administrativa. `docs/PRIVACIDAD.md` contiene el inventario y la auditoría de minimización, sin afirmar cumplimiento total.
 
 ## Commits relevantes
 

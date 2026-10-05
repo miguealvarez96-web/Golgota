@@ -15,6 +15,7 @@ const sections: { title: string; href: string; icon: PortalIconName }[] = [
   { title: "Productos", href: "/productos", icon: "products" },
   { title: "Gastos", href: "/gastos", icon: "expenses" },
   { title: "Reportes", href: "/reportes", icon: "reports" },
+  { title: "Privacidad", href: "/solicitudes-privacidad", icon: "privacy" },
 ];
 
 export default function PortalNavigation({ role }: { role: string }) {
@@ -22,7 +23,7 @@ export default function PortalNavigation({ role }: { role: string }) {
 
   const visibleSections =
     role === "staff"
-      ? sections.filter(({ href }) => !["/gastos", "/reportes", "/pagos-reportados"].includes(href))
+      ? sections.filter(({ href }) => !["/gastos", "/reportes", "/pagos-reportados", "/solicitudes-privacidad"].includes(href))
       : sections;
 
   return (
