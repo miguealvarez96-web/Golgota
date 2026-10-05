@@ -4,6 +4,7 @@ DO $$
 DECLARE
   v_bucket storage.buckets%ROWTYPE;
   v_definition text;
+  v_tiene_limpieza boolean;
 BEGIN
   SELECT * INTO v_bucket FROM storage.buckets WHERE id = 'payment-receipts';
   IF NOT FOUND OR v_bucket.public OR v_bucket.file_size_limit <> 5242880 THEN
@@ -27,7 +28,27 @@ BEGIN
   ) <> 4 THEN
     RAISE EXCEPTION 'Faltan columnas de comprobante.';
   END IF;
-  IF EXISTS (
+  SELECT EXISTS (
+    SELECT 1 FROM pg_attribute
+    WHERE attrelid = 'public.reportes_pago_alumno'::regclass
+      AND attname = 'comprobante_limpieza_estado' AND NOT attisdropped
+  ) INTO v_tiene_limpieza;
+  IF v_tiene_limpieza THEN
+    IF EXISTS (
+      SELECT 1 FROM public.reportes_pago_alumno
+      WHERE comprobante_requerido
+        AND NOT (
+          (comprobante_path IS NOT NULL AND comprobante_mime IS NOT NULL AND comprobante_size IS NOT NULL)
+          OR (comprobante_limpieza_estado = 'ELIMINADO'
+              AND comprobante_path IS NULL
+              AND comprobante_original_mime IS NOT NULL
+              AND comprobante_original_size IS NOT NULL
+              AND comprobante_eliminado_at IS NOT NULL)
+        )
+    ) THEN
+      RAISE EXCEPTION 'Hay reportes nuevos sin comprobante activo o trazabilidad de limpieza completa.';
+    END IF;
+  ELSIF EXISTS (
     SELECT 1 FROM public.reportes_pago_alumno
     WHERE comprobante_requerido
       AND (comprobante_path IS NULL OR comprobante_mime IS NULL OR comprobante_size IS NULL)

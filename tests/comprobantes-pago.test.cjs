@@ -132,7 +132,7 @@ function signedUrlHarness(role, reportAllowed = true) {
         async single() {
           if (table === 'usuarios') return { data: { rol: role, activo: true }, error: null };
           return reportAllowed
-            ? { data: { comprobante_path: 'owner/file.pdf', comprobante_mime: 'application/pdf' }, error: null }
+            ? { data: { comprobante_path: 'owner/file.pdf', comprobante_mime: 'application/pdf', estado: 'PENDIENTE' }, error: null }
             : { data: null, error: { code: 'PGRST116' } };
         },
       };

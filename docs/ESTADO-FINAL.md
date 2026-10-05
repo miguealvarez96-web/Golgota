@@ -46,6 +46,11 @@ El bloque de comprobantes añade `20261005_comprobantes_pago_v1.sql` después de
 Portal Alumno y Pagos Completos. La migración sigue pendiente de dry-run y
 autorización real; no se ejecutó contra Supabase durante esta revisión.
 
+El ajuste `20261006_limpieza_comprobantes_pago.sql` elimina el archivo privado
+después de una aprobación o rechazo exitosos, conserva la fila y metadatos
+originales, bloquea nuevas firmas al resolver y permite reintentos idempotentes
+si Storage falla. Los archivos históricos ya resueltos no se eliminan al migrar.
+
 ## Vercel y PWA
 
 No se realizó deploy en esta revisión. Vercel debe tener las variables públicas de Supabase configuradas para producción. El logo oficial y sus derivados PWA están presentes; el service worker solo precachea assets públicos y usa red con `no-store` para navegaciones.
@@ -60,6 +65,7 @@ No se realizó deploy en esta revisión. Vercel debe tener las variables públic
 - Imágenes de productos en Storage privado con URLs firmadas temporales.
 - Comprobantes de pago en `payment-receipts` privado, con límite de 5 MB, MIME y firma binaria validados, rutas UUID y URLs firmadas por 120 segundos.
 - Alumno limitado a comprobantes propios; admin/owner con lectura; staff sin acceso. Los comprobantes enlazados no se reemplazan ni eliminan desde el flujo normal.
+- Tras la revisión, solo admin/owner ejecutan la limpieza automática o su reintento; alumno no tiene DELETE y ningún rol puede firmar un comprobante resuelto.
 - Navegaciones autenticadas no persistidas por la PWA.
 - No hay borrado automático de clientes, historiales, pagos ni solicitudes de privacidad.
 
@@ -67,6 +73,7 @@ No se realizó deploy en esta revisión. Vercel debe tener las variables públic
 
 - `scripts/cerrar-bloque-pagos.ps1`
 - `scripts/cerrar-bloque-comprobantes-pago.ps1`
+- `scripts/cerrar-ajuste-limpieza-comprobantes.ps1`
 - `scripts/cerrar-bloque-coaches.ps1`
 - `scripts/cerrar-bloque-pwa.ps1`
 - `scripts/cerrar-bloque-reportes.ps1`

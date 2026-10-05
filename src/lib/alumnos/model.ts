@@ -7,6 +7,8 @@ export type ReportState = (typeof reportStates)[number];
 export const paymentReceiptMaxBytes = 5 * 1024 * 1024;
 export const paymentReceiptMimeTypes = ["image/jpeg", "image/png", "application/pdf"] as const;
 export type PaymentReceiptMime = (typeof paymentReceiptMimeTypes)[number];
+export const receiptCleanupStates = ["LEGACY", "PENDIENTE", "ERROR", "ELIMINADO"] as const;
+export type ReceiptCleanupState = (typeof receiptCleanupStates)[number];
 
 const receiptExtensions: Record<string, { mime: PaymentReceiptMime; storedExtension: "jpg" | "png" | "pdf" }> = {
   jpg: { mime: "image/jpeg", storedExtension: "jpg" },
@@ -91,6 +93,8 @@ const reportSchema = z.object({
   comprobante_path: nullableText,
   comprobante_mime: nullableText,
   comprobante_size: z.coerce.number().int().positive().nullable(),
+  comprobante_eliminado_at: nullableText,
+  comprobante_limpieza_estado: z.enum(receiptCleanupStates),
   observacion: nullableText,
   estado: z.enum(reportStates),
   created_at: z.string(),
@@ -128,6 +132,12 @@ export type AdminPaymentReport = {
   comprobante_path: string | null;
   comprobante_mime: string | null;
   comprobante_size: number | null;
+  comprobante_eliminado_at: string | null;
+  comprobante_original_mime: string | null;
+  comprobante_original_size: number | null;
+  comprobante_limpieza_estado: ReceiptCleanupState;
+  comprobante_limpieza_intentos: number;
+  comprobante_limpieza_error_at: string | null;
   observacion: string | null;
   estado: ReportState;
   created_at: string;
@@ -157,6 +167,12 @@ const adminPaymentReportSchema = z.object({
   comprobante_path: nullableText,
   comprobante_mime: nullableText,
   comprobante_size: z.coerce.number().int().positive().nullable(),
+  comprobante_eliminado_at: nullableText,
+  comprobante_original_mime: nullableText,
+  comprobante_original_size: z.coerce.number().int().positive().nullable(),
+  comprobante_limpieza_estado: z.enum(receiptCleanupStates),
+  comprobante_limpieza_intentos: z.coerce.number().int().nonnegative(),
+  comprobante_limpieza_error_at: nullableText,
   observacion: nullableText,
   estado: z.enum(reportStates),
   created_at: z.string(),

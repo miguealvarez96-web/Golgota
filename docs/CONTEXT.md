@@ -58,6 +58,15 @@ y exige comprobante en los reportes nuevos. El alumno carga bajo
 propios reportes; admin/owner consultan todos mediante URL firmada temporal y
 `staff` no tiene acceso. No se implementa reemplazo de evidencia en esta fase.
 
+El ajuste `20261006_limpieza_comprobantes_pago.sql` reduce la conservación:
+mientras el reporte está `PENDIENTE` el archivo permanece disponible; después de
+aprobar o rechazar, el servidor intenta eliminarlo y anula la ruta solo tras
+confirmar la eliminación. La fila del reporte, los datos financieros, MIME y
+tamaño originales y `comprobante_eliminado_at` se conservan. Un fallo de Storage
+no revierte la decisión ni el pago real: queda marcado para reintento idempotente
+por admin/owner. Los comprobantes ya resueltos antes del ajuste quedan `LEGACY` y
+no se limpian automáticamente.
+
 El BLOQUE 2 de pagos completos está preparado en
 `20261004_pagos_completos_v1.sql`. La aprobación bloquea reporte y membresía,
 rechaza saldo cero, cancelaciones y sobrepagos, reutiliza `registrar_pago` y

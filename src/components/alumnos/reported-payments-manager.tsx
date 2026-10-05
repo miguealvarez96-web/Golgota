@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { reviewReportedPayment } from "@/app/(app)/pagos-reportados/actions";
+import { retryPaymentReceiptCleanup, reviewReportedPayment } from "@/app/(app)/pagos-reportados/actions";
 import {
   filterAdminPaymentReports,
   moneyLabel,
@@ -54,6 +54,26 @@ export default function ReportedPaymentsManager({ reports }: { reports: AdminPay
     setError("");
     try {
       const result = await reviewReportedPayment({ reporte_id: id, decision, motivo });
+      if (result.ok) {
+        setMessage(result.message);
+        router.refresh();
+      } else {
+        setError(result.message);
+      }
+    } finally {
+      activeReview.current = null;
+      setActiveId(null);
+    }
+  }
+
+  async function retryCleanup(id: string) {
+    if (activeReview.current) return;
+    activeReview.current = id;
+    setActiveId(id);
+    setMessage("");
+    setError("");
+    try {
+      const result = await retryPaymentReceiptCleanup(id);
       if (result.ok) {
         setMessage(result.message);
         router.refresh();
@@ -131,9 +151,20 @@ export default function ReportedPaymentsManager({ reports }: { reports: AdminPay
 
           {report.observacion && <p className="mt-4 rounded-xl bg-brand-bg p-3 text-sm"><span className="font-medium">Observación:</span> {report.observacion}</p>}
           {(report.banco_origen || report.referencia) && <p className="mt-3 text-xs text-brand-secondary">Datos históricos: {[report.banco_origen, report.referencia].filter(Boolean).join(" · ")}</p>}
-          {report.comprobante_path && report.comprobante_mime
+          {report.estado === "PENDIENTE" && report.comprobante_path && report.comprobante_mime
             ? <PaymentReceiptButton reportId={report.id} />
-            : <p className="mt-3 text-xs text-brand-secondary">Sin comprobante adjunto (reporte histórico).</p>}
+            : report.comprobante_eliminado_at
+              ? <p className="mt-3 text-xs text-brand-secondary">Comprobante eliminado después de la revisión.</p>
+              : report.estado !== "PENDIENTE" && report.comprobante_path && report.comprobante_limpieza_estado !== "LEGACY"
+                ? <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                  <p>El comprobante está pendiente de eliminación y ya no puede consultarse.</p>
+                  <button type="button" className="btn-secondary mt-3" disabled={activeId !== null} onClick={() => retryCleanup(report.id)}>
+                    {activeId === report.id ? "Limpiando…" : "Reintentar limpieza"}
+                  </button>
+                </div>
+                : report.estado !== "PENDIENTE" && report.comprobante_path
+                  ? <p className="mt-3 text-xs text-brand-secondary">Comprobante histórico conservado; no está disponible para consulta.</p>
+                  : <p className="mt-3 text-xs text-brand-secondary">Sin comprobante adjunto (reporte histórico).</p>}
 
           {report.estado !== "PENDIENTE" && <dl className="mt-4 grid gap-4 rounded-xl border border-brand-border bg-brand-bg p-4 text-sm sm:grid-cols-2 xl:grid-cols-4">
             <Metric label="Revisor" value={report.revisor ?? report.reviewed_by ?? "No disponible"} />

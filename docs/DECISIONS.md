@@ -124,8 +124,20 @@ visibles y se identifican como históricos.
 El bucket `payment-receipts` no es público. Alumno solo carga y firma archivos
 propios enlazados a sus reportes; admin y owner pueden firmar cualquier
 comprobante de la bandeja; staff no tiene acceso. Una carga fallida y aún no
-enlazada puede limpiarse, pero no existe UPDATE ni reemplazo del comprobante una
-vez creado el reporte.
+enlazada no concede por sí misma permiso DELETE al alumno; tampoco existe UPDATE
+ni reemplazo del comprobante una vez creado el reporte.
+
+La conservación física termina al resolver reportes nuevos. Aprobación o rechazo
+se confirman primero en PostgreSQL; después se elimina el objeto de Storage. La
+limpieza nunca forma parte de la transacción financiera, por lo que un fallo al
+borrar no revierte un pago aprobado ni un rechazo registrado. En ese caso se
+conserva la ruta solo para reintento admin/owner, pero la política y la acción de
+firma bloquean su consulta desde que el estado deja de ser `PENDIENTE`.
+
+Al confirmar la eliminación se anulan ruta, MIME y tamaño operativos, y se
+conservan `comprobante_original_mime`, `comprobante_original_size` y
+`comprobante_eliminado_at`. Alumno no dispone de DELETE manual. Los reportes
+resueltos antes de la migración quedan `LEGACY` y no se depuran automáticamente.
 
 La aprobación usa `registrar_pago` como única fuente de escritura financiera,
 bloquea el reporte y la membresía, rechaza sobrepagos y enlaza exactamente un

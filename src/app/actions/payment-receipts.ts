@@ -20,8 +20,8 @@ export async function getPaymentReceiptUrl(reportId: string): Promise<ReceiptUrl
       return { ok: false, message: "No tienes permiso para ver este comprobante." };
     }
     const { data: report, error: reportError } = await supabase.from("reportes_pago_alumno")
-      .select("comprobante_path, comprobante_mime").eq("id", reportId).single();
-    if (reportError || !report?.comprobante_path || !report.comprobante_mime) {
+      .select("comprobante_path, comprobante_mime, estado").eq("id", reportId).single();
+    if (reportError || report?.estado !== "PENDIENTE" || !report.comprobante_path || !report.comprobante_mime) {
       return { ok: false, message: "Este reporte no tiene un comprobante disponible." };
     }
     const { data, error } = await supabase.storage.from("payment-receipts")

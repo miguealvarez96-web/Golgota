@@ -64,7 +64,8 @@ También están pendientes la razón social o nombre completo del responsable, R
 - El navegador usa la clave publicable y la sesión del usuario; no se incorpora `service_role`.
 - Las RPC derivan el titular y el revisor desde `auth.uid()` y vuelven a comprobar el rol.
 - Las tablas no conceden INSERT, UPDATE ni DELETE directo a `authenticated`.
-- Los comprobantes usan un bucket privado, rutas UUID y URL firmada temporal; la política de borrado solo limpia cargas fallidas aún no enlazadas.
+- Los comprobantes usan un bucket privado, rutas UUID y URL firmada temporal; alumno no recibe permiso de borrado manual.
+- Los comprobantes nuevos se conservan físicamente solo mientras el reporte está pendiente. Después de aprobar o rechazar se elimina el objeto, se anula la ruta firmable y quedan fecha de eliminación, MIME y tamaño originales; los fallos se reintentan sin revertir la revisión financiera.
 - El service worker no precarga `/privacidad`; las navegaciones usan red con `no-store` y no persisten páginas autenticadas.
 - No guardar contraseñas ni URL de conexión en archivos, logs o commits. El macro usa únicamente `SUPABASE_DB_URL` en memoria.
 
