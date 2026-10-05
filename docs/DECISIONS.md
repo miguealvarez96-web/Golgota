@@ -146,6 +146,14 @@ Las páginas autenticadas y la navegación usan red con `no-store`; nunca se per
 
 La instalación se ofrece de forma discreta mediante `beforeinstallprompt`; Safari en iOS recibe una guía manual bajo demanda.
 
+## Reportes de gestión
+
+`/reportes` es exclusivo de `admin` y `owner`; la autorización se valida en servidor y se apoya en las políticas RLS existentes de pagos, membresías, gastos y ventas. Staff y alumno no reciben acceso directo ni navegación hacia el módulo.
+
+El resultado neto se define como pagos confirmados en `public.pagos` menos gastos del período. La cartera pendiente es una métrica separada y no forma parte de los ingresos. `pagos_reportados` no es una fuente de ingresos: solo una aprobación que haya creado el pago real puede reflejarse en el reporte.
+
+Las vigencias se obtienen de `v_membresias_estado` y de las utilidades de membresías existentes. El umbral operativo de stock bajo es de una a cinco unidades; stock cero se muestra por separado. Las ventas con estado `PAGADO` permiten un ranking, pero no se agregan a caja mientras no exista un historial fiable de cobros de ventas.
+
 ## Privacidad y LOPDP
 
 La Ley Organica de Proteccion de Datos Personales de Ecuador debe considerarse un requisito del proyecto.

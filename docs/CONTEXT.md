@@ -64,6 +64,14 @@ El Dashboard de `admin` y `owner` contiene cinco KPI: clientes activos, membres�
 
 El Dashboard de `staff` es exclusivamente operativo: búsqueda rápida de alumnos, próximos a vencer, vencidos, WOD publicado del día, comunicados recientes y acceso a crear cliente. Usa `v_membresias_verificacion` y no consulta pagos, saldos, abonos, ingresos ni `v_dashboard_kpis`.
 
+## Reportes de gestión
+
+El BLOQUE 5 reemplaza el placeholder de `/reportes` por una vista ejecutiva exclusiva para `admin` y `owner`. Permite consultar hoy, mes actual, mes anterior o un rango personalizado usando la fecha de negocio de Ecuador. Incluye clientes activos, vigencias, ingresos confirmados, cartera, gastos, resultado neto, cobranza priorizada, próximas renovaciones, stock bajo, distribución de membresías, gráficos y exportación CSV de cobranza.
+
+Los ingresos se obtienen únicamente de `public.pagos`, que contiene pagos reales. Los reportes de alumno pendientes o rechazados no se consultan ni se suman. El saldo pendiente se presenta como cartera y nunca como ingreso. Las ventas pagadas se usan solo para un ranking de productos; no se incorporan al resultado neto porque el esquema actual de ventas no tiene un historial de cobros equivalente a `public.pagos`.
+
+No fue necesario añadir SQL: las tablas y vistas existentes son suficientes, y la sesión server-side conserva las políticas RLS financieras para `admin` y `owner`. `staff` y `alumno` quedan rechazados además por el control de acceso específico de la ruta.
+
 ## Portal Coach / Staff
 
 El BLOQUE 3 está completo en código y preparado para dry-run SQL. La búsqueda de clientes muestra plan, inicio, vencimiento y los estados `POR INICIAR`, `VIGENTE`, `POR VENCER`, `VENCE HOY` y `VENCIDA` mediante una proyección operativa sin columnas financieras. Staff conserva el alta de clientes, pero no puede editar, inactivar, crear o renovar membresías ni entrar a pagos, gastos o reportes financieros.

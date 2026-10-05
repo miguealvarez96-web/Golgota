@@ -40,6 +40,7 @@ const clientPage = read('src/app/(app)/clientes/page.tsx');
 const clientManager = read('src/components/clientes/clients-manager.tsx');
 const expensesPage = read('src/app/(app)/gastos/page.tsx');
 const reportsPage = read('src/app/(app)/reportes/page.tsx');
+const reportsAccess = read('src/lib/reportes/access.ts');
 const id = 'b98e5f70-849c-4df8-906a-2b20654fdb39';
 
 function actionHarness(role, relative, exportName, table) {
@@ -114,7 +115,8 @@ test('búsqueda de alumnos muestra vigencia completa sin datos financieros', () 
 
 test('staff conserva alta de clientes pero rutas financieras siguen bloqueadas', () => {
   assert.match(expensesPage, /access\.role === "staff"[\s\S]*redirect\("\/"\)/);
-  assert.match(reportsPage, /access\.role === "staff"[\s\S]*redirect\("\/"\)/);
+  assert.match(reportsPage, /getReportAccess\(\)[\s\S]*if \(!access\) redirect\("\/"\)/);
+  assert.match(reportsAccess, /!\["admin", "owner"\]\.includes\(profile\.rol\)[\s\S]*return null/);
   assert.match(navigation, /role === "staff"[\s\S]*"\/gastos"[\s\S]*"\/reportes"[\s\S]*"\/pagos-reportados"/);
   assert.match(clientManager, /Nuevo cliente/);
   assert.match(clientManager, /\{canEdit && <td className="p-3[\s\S]*?editButton\(client\)/);

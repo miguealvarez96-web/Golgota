@@ -155,7 +155,7 @@ Pendiente únicamente: ejecutar dry-run autorizado, aplicar la migración, valid
 
 ## Fase 7 - Reportes y gestion
 
-Estado: PENDIENTE
+Estado: BLOQUE 5 COMPLETO, LISTO PARA CIERRE
 
 Posibles mejoras:
 
@@ -166,6 +166,18 @@ Posibles mejoras:
 - ingresos;
 - asistencia;
 - indicadores de gestion.
+
+Implementado:
+
+- filtros por hoy, mes actual, mes anterior y rango personalizado;
+- ocho KPI de operación, cobranza y resultado financiero;
+- ingresos limitados a pagos reales confirmados;
+- gastos, resultado neto y cartera separados correctamente;
+- cobranza priorizada y exportable a CSV;
+- distribución de vigencias y próximas renovaciones;
+- stock bajo, agotados y ranking opcional de ventas pagadas;
+- acceso server-side exclusivo de admin/owner apoyado por RLS existente;
+- gráficos responsive, pruebas y macro de cierre sin SQL nuevo.
 
 ## Fase 8 - Aplicacion movil nativa
 

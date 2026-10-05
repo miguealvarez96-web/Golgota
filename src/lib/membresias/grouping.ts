@@ -14,6 +14,8 @@ const priority: Record<Vigency, number> = {
   VENCIDA: 0, VENCE_HOY: 1, POR_VENCER: 2, VIGENTE: 3, POR_INICIAR: 4,
 };
 
+export function vigencyPriority(value: Vigency): number { return priority[value]; }
+
 export function vigencyOf(row: MembershipBase): Vigency {
   return row.estado_vigencia === "VIGENTE" || row.estado_vigencia === "POR_VENCER"
     || row.estado_vigencia === "VENCE_HOY" || row.estado_vigencia === "VENCIDA"
@@ -48,8 +50,8 @@ export function groupByClient<T extends MembershipBase>(rows: T[], clients: Map<
     if (client) groups.push({ client, memberships, overview: chooseOverview(memberships) });
   });
   return groups.sort((a, b) => {
-    const aRank = a.overview ? priority[vigencyOf(a.overview)] : 5;
-    const bRank = b.overview ? priority[vigencyOf(b.overview)] : 5;
+    const aRank = a.overview ? vigencyPriority(vigencyOf(a.overview)) : 5;
+    const bRank = b.overview ? vigencyPriority(vigencyOf(b.overview)) : 5;
     if (aRank !== bRank) return aRank - bRank;
     if (a.overview && b.overview) {
       const dateOrder = aRank === 0
