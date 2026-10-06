@@ -10,10 +10,13 @@ export default async function ClientMembershipHistory({ params }: { params: { id
   if (!access) return <Notice text="Tu sesión no permite consultar este historial." />;
   if (!/^[0-9a-f-]{36}$/i.test(params.id)) return <Notice text="No se encontró el cliente." />;
   try {
-    const { data: client, error } = await access.supabase.from("clientes")
-      .select("id,nombre_completo,cedula").eq("id", params.id).maybeSingle();
+    const staff = access.role === "staff";
+    const clientResult = staff
+      ? await access.supabase.from("clientes").select("id,nombre_completo").eq("id", params.id).maybeSingle()
+      : await access.supabase.from("clientes").select("id,nombre_completo,cedula").eq("id", params.id).maybeSingle();
+    const { data: client, error } = clientResult as { data: { id: string; nombre_completo: string; cedula?: string } | null; error: unknown };
     if (error || !client) return <Notice text="No se encontró el cliente." />;
-    if (access.role === "staff") {
+    if (staff) {
       const rows = await loadOperationalMemberships(access.supabase, client.id);
       return <HistoryShell client={client} staff rows={rows} plans={new Map()} payments={new Map()} />;
     }
@@ -31,7 +34,7 @@ export default async function ClientMembershipHistory({ params }: { params: { id
 
 type Payment = { id: string; monto: number; fecha_pago: string; metodo_pago: string };
 function HistoryShell({ client, staff, rows, plans, payments }: {
-  client: { id: string; nombre_completo: string; cedula: string }; staff: boolean;
+  client: { id: string; nombre_completo: string; cedula?: string }; staff: boolean;
   rows: FinancialMembership[] | OperationalMembership[];
   plans: Map<string, string>; payments: Map<string, Payment[]>;
 }) {
@@ -50,7 +53,7 @@ function HistoryShell({ client, staff, rows, plans, payments }: {
   return <main className="portal-page">
     <Link href="/membresias" className="text-sm text-brand-secondary underline underline-offset-4">← Membresías</Link>
     <div className="mt-4 flex flex-wrap items-start justify-between gap-4"><div><p className="eyebrow">Historial por cliente</p>
-      <h1 className="page-title mt-2">{client.nombre_completo}</h1><p className="mt-2 text-sm text-brand-secondary">Identificación · {client.cedula}</p></div>
+      <h1 className="page-title mt-2">{client.nombre_completo}</h1>{!staff && <p className="mt-2 text-sm text-brand-secondary">Identificación · {client.cedula}</p>}</div>
       {!staff && <Link className="btn-primary" href={`/membresias/nueva?cliente=${client.id}`}>Nueva membresía</Link>}
     </div>
     <section className="mt-7"><h2 className="text-lg font-semibold">Membresía actual</h2>

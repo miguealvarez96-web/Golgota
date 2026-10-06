@@ -113,7 +113,7 @@ test('la carga de staff consulta solo la proyección sin importes', async () => 
   } };
   const data = load('src/lib/membresias/data.ts', { 'server-only': {} });
   const rows = await data.loadOperationalMemberships(supabase);
-  const clients = await data.loadClientIdentities(supabase, [id]);
+  const clients = await data.loadClientIdentities(supabase, [id], false);
   assert.deepEqual(tables, ['v_membresias_verificacion', 'clientes']);
   assert.equal(clients.get(id).nombre_completo, 'Alumno de prueba');
   assert.equal(Object.hasOwn(rows[0], 'saldo'), false);
@@ -130,7 +130,7 @@ test('la página de membresías de staff ignora filtros financieros y no carga i
     '@/lib/membresias/grouping': grouping,
     '@/lib/membresias/data': {
       async loadOperationalMemberships() { calls.push('operativa'); return operational; },
-      async loadClientIdentities() { calls.push('clientes'); return new Map([[id, { id, nombre_completo: 'Alumno', cedula: '001' }]]); },
+      async loadClientIdentities(_db, _ids, includeIdentification) { calls.push('clientes'); assert.equal(includeIdentification, false); return new Map([[id, { id, nombre_completo: 'Alumno' }]]); },
       async loadFinancialMemberships() { throw Error('consulta financiera'); },
       async loadPlanNames() { throw Error('consulta de precios'); },
     },
@@ -159,9 +159,9 @@ test('owner carga membresías financieras e historial de pagos', async () => {
     '@/lib/membresias/grouping': grouping,
     '@/lib/membresias/data': data,
   });
-  const list = await ListPage({ searchParams: { filtro: 'saldo_pendiente' } });
+  const list = await ListPage({ searchParams: { filtro: 'vence_hoy' } });
   assert.equal(list.props.staff, false);
-  assert.equal(list.props.filter, 'saldo_pendiente');
+  assert.equal(list.props.filter, 'vence_hoy');
   assert.equal(list.props.groups[0].overview.saldo, 5);
   assert.deepEqual(calls, ['financieras', 'clientes', 'planes']);
 
@@ -256,17 +256,17 @@ test('ordena clientes por VENCIDA, VENCE HOY, POR VENCER, VIGENTE y POR INICIAR'
   assert.deepEqual(ordered, ['VENCIDA', 'VENCE_HOY', 'POR_VENCER', 'VIGENTE', 'POR_INICIAR']);
 });
 
-test('filtra por nombre o cédula y por estado del resumen, sin exponer finanzas a staff', () => {
+test('filtra por nombre o cédula y por cada estado operativo', () => {
   const rows = [member(id, 'a', 'VENCE_HOY', '2026-10-30', { saldo: 5, estado_pago: 'PENDIENTE' }),
     member(otherId, 'b', 'VENCIDA', '2026-09-30')];
   const clients = new Map([[id, { id, nombre_completo: 'José', cedula: '001234' }],
     [otherId, { id: otherId, nombre_completo: 'Ana', cedula: '009876' }]]);
   const groups = grouping.groupByClient(rows, clients);
-  assert.equal(grouping.filterClientGroups(groups, 'jose', 'vigentes').length, 1);
+  assert.equal(grouping.filterClientGroups(groups, 'jose', 'vence_hoy').length, 1);
   assert.equal(grouping.filterClientGroups(groups, '009876', 'vencidas').length, 1);
   assert.equal(grouping.filterClientGroups(groups, '', 'por_vencer').length, 0);
-  assert.equal(grouping.filterClientGroups(groups, '', 'saldo_pendiente').length, 1);
-  assert.equal(grouping.filterClientGroups(groups, '', 'pagadas').length, 1);
+  assert.equal(grouping.filterClientGroups(groups, '', 'vigentes').length, 0);
+  assert.equal(grouping.filterClientGroups(groups, '', 'por_iniciar').length, 0);
 });
 
 test('el historial de staff no consulta membresías financieras ni pagos', async () => {

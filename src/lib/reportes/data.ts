@@ -168,7 +168,7 @@ export async function loadManagementReport(supabase: Database, period: ReportPer
         membershipId: membership.id,
         clientId: membership.cliente_id,
         clientName: client.nombre_completo,
-        clientDocument: client.cedula,
+        clientDocument: client.cedula ?? "",
         plan: plans.get(membership.plan_id) ?? "Plan no disponible",
         balance: Number(membership.saldo),
         dueDate: membership.fecha_fin,

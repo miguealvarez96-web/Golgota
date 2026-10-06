@@ -185,8 +185,9 @@ test('acceso rechaza perfiles inactivos y roles ajenos a la operación', async (
 
 test('la página de staff consulta vigencia operativa sin entregar finanzas', async () => {
   const tables = [];
-  const clientsQuery = { select() { return this; }, order() { return this; }, range() { return this; },
-    then(resolve) { return Promise.resolve({ data: [{ id, ...valid }], count: 1, error: null }).then(resolve); } };
+  let clientSelection = '';
+  const clientsQuery = { select(fields) { clientSelection = fields; return this; }, order() { return this; }, range() { return this; },
+    then(resolve) { return Promise.resolve({ data: [{ id, nombre_completo: valid.nombre_completo, estado_cliente: valid.estado_cliente }], count: 1, error: null }).then(resolve); } };
   const membershipQuery = { select() { return this; }, in() { return this; }, order() { return this; },
     then(resolve) { return Promise.resolve({ data: [{ membresia_id: id, cliente_id: id, plan: 'MENSUAL', fecha_inicio: '2026-10-01', fecha_fin: '2026-10-30', estado_vigencia: 'POR_VENCER' }], count: 1, error: null }).then(resolve); } };
   const { default: Page } = load('src/app/(app)/clientes/page.tsx', {
@@ -197,8 +198,11 @@ test('la página de staff consulta vigencia operativa sin entregar finanzas', as
   });
   const element = await Page({ searchParams: {} });
   assert.deepEqual(tables, ['clientes', 'v_membresias_verificacion']);
+  assert.equal(clientSelection, 'id,nombre_completo,estado_cliente');
   assert.equal(element.props.canEdit, false);
+  for (const field of ['cedula', 'celular', 'email']) assert.equal(Object.hasOwn(element.props.clients[0], field), false);
   assert.equal(element.props.memberships[id].plan, 'MENSUAL');
   assert.equal(element.props.memberships[id].fecha_inicio, '2026-10-01');
+  assert.equal(typeof element.props.memberships[id].dias_restantes, 'number');
   assert.equal(Object.hasOwn(element.props.memberships[id], 'saldo'), false);
 });

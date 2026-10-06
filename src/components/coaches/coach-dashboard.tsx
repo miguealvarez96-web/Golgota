@@ -9,7 +9,7 @@ export default function CoachDashboard({ data }: { data: CoachDashboardData }) {
     <div className="flex flex-wrap items-start justify-between gap-4"><div><p className="eyebrow">Coach · Operación diaria</p><h1 className="page-title mt-2">Panel operativo</h1><p className="mt-2 text-sm text-brand-secondary">Alumnos, vigencias y comunicación del día.</p></div><Link href="/clientes" className="btn-primary">Crear cliente</Link></div>
 
     <form action="/clientes" className="panel mt-7 flex flex-col gap-3 p-4 sm:flex-row sm:items-end sm:p-5" role="search">
-      <div className="min-w-0 flex-1"><label htmlFor="coach-student-search" className="field-label">Búsqueda rápida de alumno</label><input id="coach-student-search" name="q" type="search" className="field" maxLength={100} placeholder="Nombre, cédula o celular" /></div>
+      <div className="min-w-0 flex-1"><label htmlFor="coach-student-search" className="field-label">Búsqueda rápida de alumno</label><input id="coach-student-search" name="q" type="search" className="field" maxLength={100} placeholder="Nombre del alumno" /></div>
       <button type="submit" className="btn-primary">Buscar alumno</button>
     </form>
 
@@ -31,7 +31,6 @@ export default function CoachDashboard({ data }: { data: CoachDashboardData }) {
 
 function AlertList({ title, items, empty }: { title: string; items: CoachMembershipAlert[]; empty: string }) {
   return <section className="panel overflow-hidden"><div className="flex items-center justify-between border-b border-brand-border p-5 sm:px-6"><h2 className="text-lg font-semibold">{title}</h2><span className="rounded-full bg-brand-copper/10 px-3 py-1 text-sm font-semibold text-brand-copper">{items.length}</span></div>
-    {!items.length ? <p className="p-6 text-sm text-brand-secondary">{empty}</p> : <ol className="divide-y divide-brand-border">{items.map((item) => <li key={item.membresia_id} className="p-5 sm:px-6"><div className="flex flex-wrap items-start justify-between gap-3"><div><Link href={`/membresias/cliente/${item.cliente_id}`} className="font-semibold hover:text-brand-copper">{item.cliente}</Link><p className="mt-1 text-xs text-brand-secondary">{item.cedula}{item.celular ? ` · ${item.celular}` : ""}</p></div><VigencyBadge state={item.estado_vigencia} /></div><p className="mt-3 text-sm text-brand-secondary">{item.plan} · {displayDate(item.fecha_inicio)} — {displayDate(item.fecha_fin)}</p></li>)}</ol>}
+    {!items.length ? <p className="p-6 text-sm text-brand-secondary">{empty}</p> : <ol className="divide-y divide-brand-border">{items.map((item) => <li key={item.membresia_id} className="p-5 sm:px-6"><div className="flex flex-wrap items-start justify-between gap-3"><Link href={`/membresias/cliente/${item.cliente_id}`} className="font-semibold hover:text-brand-copper">{item.cliente}</Link><VigencyBadge state={item.estado_vigencia} /></div><p className="mt-3 text-sm text-brand-secondary">{item.plan} · {displayDate(item.fecha_inicio)} — {displayDate(item.fecha_fin)}</p></li>)}</ol>}
   </section>;
 }
-

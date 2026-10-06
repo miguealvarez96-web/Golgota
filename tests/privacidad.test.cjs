@@ -93,7 +93,7 @@ test('RLS limita al alumno a sus filas, da gestión a admin/owner y no incluye s
   assert.match(migration, /privacidad_solicitudes_gestion[\s\S]*mi_rol\(\) IN \('admin', 'owner'\)/);
   assert.doesNotMatch(migration, /mi_rol\(\).*staff/);
   assert.match(navigation, /"\/solicitudes-privacidad"/);
-  assert.match(navigation, /staffSections = new Set\(\["\/", "\/clientes", "\/wod", "\/comunicados"\]\)/);
+  assert.match(navigation, /staffSections = new Set\(\["\/", "\/clientes", "\/membresias", "\/wod", "\/comunicados"\]\)/);
   assert.match(navigation, /role === "staff"[\s\S]*staffSections\.has\(href\)/);
 });
 

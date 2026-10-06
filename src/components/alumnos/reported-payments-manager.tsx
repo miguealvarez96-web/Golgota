@@ -90,14 +90,14 @@ export default function ReportedPaymentsManager({ reports }: { reports: AdminPay
     <section className="panel p-4 sm:p-5" aria-label="Filtros de pagos reportados">
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
         <div>
-          <label htmlFor="reported-payments-search" className="field-label">Buscar alumno</label>
+          <label htmlFor="reported-payments-search" className="field-label">Buscar alumno o fecha</label>
           <input
             id="reported-payments-search"
             className="field"
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Nombre del alumno"
+            placeholder="Nombre o fecha AAAA-MM-DD"
           />
         </div>
         <div className="flex flex-wrap gap-2" aria-label="Filtrar por estado">
@@ -130,14 +130,15 @@ export default function ReportedPaymentsManager({ reports }: { reports: AdminPay
           && report.saldo_membresia > 0
           && report.monto <= report.saldo_membresia
           && report.estado_pago_membresia !== "CANCELADA";
-        return <article key={report.id} className="panel p-5 sm:p-6">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <h2 className="text-lg font-semibold">{report.alumno}</h2>
-              <p className="mt-1 text-sm text-brand-secondary">Reportado {dateTimeLabel(report.created_at)}</p>
-            </div>
+        return <details key={report.id} className="panel group overflow-hidden">
+          <summary className="grid cursor-pointer list-none items-center gap-3 p-5 marker:hidden sm:grid-cols-[minmax(0,1fr)_auto_auto_auto] sm:p-6">
+            <div className="flex min-w-0 items-center gap-2"><span aria-hidden="true" className="text-brand-copper transition group-open:rotate-90">▶</span><h2 className="truncate text-lg font-semibold">{report.alumno}</h2></div>
+            <strong>{moneyLabel(report.monto)}</strong>
             <StatusBadge state={report.estado} />
-          </div>
+            <span className="text-sm text-brand-secondary">{displayDate(report.fecha_pago)}</span>
+          </summary>
+          <div className="border-t border-brand-border p-5 sm:p-6">
+          <p className="text-sm text-brand-secondary">Reportado {dateTimeLabel(report.created_at)}</p>
 
           <dl className="mt-5 grid gap-4 border-t border-brand-border pt-4 text-sm sm:grid-cols-2 xl:grid-cols-4">
             <Metric label="Membresía" value={membershipLabel(report)} />
@@ -187,7 +188,8 @@ export default function ReportedPaymentsManager({ reports }: { reports: AdminPay
               {activeId === report.id ? "Procesando…" : "Aprobar"}
             </button>
           </div>}
-        </article>;
+          </div>
+        </details>;
       })}</div>}
   </>;
 }

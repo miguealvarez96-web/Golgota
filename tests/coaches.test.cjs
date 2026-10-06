@@ -26,6 +26,7 @@ function load(relative, mocks = {}) {
 
 const model = load('src/lib/coaches/model.ts');
 const migration = read('supabase/migrations/20261004_coaches_completos_v1.sql');
+const operationMigration = read('supabase/migrations/20261011_operacion_ux.sql');
 const preflight = read('supabase/preflight/20261004_preflight_coaches_completos_v1.sql');
 const postflight = read('supabase/postflight/20261004_postflight_coaches_completos_v1.sql');
 const rollback = read('supabase/rollback/20261004_rollback_coaches_completos_v1.sql');
@@ -60,45 +61,49 @@ function actionHarness(role, relative, exportName, table) {
 }
 
 test('modelos validan contenido y rechazan campos protegidos', () => {
-  assert.equal(model.wodSchema.safeParse({ fecha: '2026-10-04', titulo: ' Fuerza ', contenido: ' Trabajo ', publicado: true }).success, true);
+  assert.equal(model.wodSchema.safeParse({ fecha: '2026-10-04', titulo: ' Fuerza ', descripcion: ' Trabajo ', publicado: true }).success, true);
+  assert.equal(model.wodSchema.safeParse({ fecha: '2026-10-04', titulo: 'WOD', descripcion: 'Trabajo', youtube_url: 'no-es-url', publicado: true }).success, false);
+  assert.equal(model.wodSchema.safeParse({ fecha: '2026-10-04', titulo: 'WOD', descripcion: 'Trabajo', horario_grupo: '06:00', youtube_url: 'https://youtu.be/demo', notas: 'Escalar carga', publicado: true }).success, true);
   assert.equal(model.announcementSchema.safeParse({ titulo: '', contenido: 'Aviso', publicado: true }).success, false);
-  assert.equal(model.wodSchema.safeParse({ fecha: '2026-10-04', titulo: 'WOD', contenido: 'Trabajo', publicado: true, created_by: id }).success, false);
+  assert.equal(model.wodSchema.safeParse({ fecha: '2026-10-04', titulo: 'WOD', descripcion: 'Trabajo', publicado: true, created_by: id }).success, false);
 });
 
-test('staff y alumno no administran WOD ni comunicados aunque invoquen acciones', async () => {
-  for (const role of ['staff', 'alumno']) {
-    const wod = actionHarness(role, 'src/app/(app)/wod/actions.ts', 'saveWod', 'wods');
-    const announcement = actionHarness(role, 'src/app/(app)/comunicados/actions.ts', 'saveAnnouncement', 'comunicados');
-    assert.equal((await wod.action(null, { fecha: '2026-10-04', titulo: 'WOD', contenido: 'Trabajo', publicado: true })).ok, false);
-    assert.equal((await announcement.action(null, { titulo: 'Aviso', contenido: 'Contenido', publicado: true })).ok, false);
-    assert.equal(wod.writes.length + announcement.writes.length, 0);
-  }
+test('staff gestiona WOD pero no comunicados; alumno no gestiona contenido', async () => {
+  const staffWod = actionHarness('staff', 'src/app/(app)/wod/actions.ts', 'saveWod', 'wods');
+  assert.equal((await staffWod.action(null, { fecha: '2026-10-04', titulo: 'WOD', descripcion: 'Trabajo', publicado: true })).ok, true);
+  assert.equal(staffWod.writes[0].data.contenido, 'Trabajo');
+  const staffEdit = actionHarness('staff', 'src/app/(app)/wod/actions.ts', 'saveWod', 'wods');
+  assert.equal((await staffEdit.action(id, { fecha: '2026-10-04', titulo: 'WOD', descripcion: 'Trabajo', horario_grupo: '06:00', youtube_url: 'https://youtu.be/demo', notas: 'Escalar carga', publicado: true })).ok, true);
+  assert.deepEqual(staffEdit.writes[0], { operation: 'update', data: { fecha: '2026-10-04', titulo: 'WOD', contenido: 'Trabajo', horario_grupo: '06:00', youtube_url: 'https://youtu.be/demo', notas: 'Escalar carga', publicado: true } });
+  const staffAnnouncement = actionHarness('staff', 'src/app/(app)/comunicados/actions.ts', 'saveAnnouncement', 'comunicados');
+  assert.equal((await staffAnnouncement.action(null, { titulo: 'Aviso', contenido: 'Contenido', publicado: true })).ok, false);
+  const studentWod = actionHarness('alumno', 'src/app/(app)/wod/actions.ts', 'saveWod', 'wods');
+  assert.equal((await studentWod.action(null, { fecha: '2026-10-04', titulo: 'WOD', descripcion: 'Trabajo', publicado: true })).ok, false);
+  assert.equal(studentWod.writes.length, 0);
 });
 
 test('admin y owner crean y editan WOD y comunicados con campos permitidos', async () => {
   for (const role of ['admin', 'owner']) {
     const wod = actionHarness(role, 'src/app/(app)/wod/actions.ts', 'saveWod', 'wods');
-    assert.equal((await wod.action(null, { fecha: '2026-10-04', titulo: 'WOD', contenido: 'Trabajo', publicado: true })).ok, true);
+    assert.equal((await wod.action(null, { fecha: '2026-10-04', titulo: 'WOD', descripcion: 'Trabajo', publicado: true })).ok, true);
     assert.equal(wod.writes[0].data.created_by, id);
+    assert.equal(wod.writes[0].data.contenido, 'Trabajo');
     const announcement = actionHarness(role, 'src/app/(app)/comunicados/actions.ts', 'saveAnnouncement', 'comunicados');
     assert.equal((await announcement.action(id, { titulo: 'Aviso', contenido: 'Contenido', publicado: false })).ok, true);
     assert.deepEqual(announcement.writes[0], { operation: 'update', data: { titulo: 'Aviso', contenido: 'Contenido', publicado: false } });
   }
 });
 
-test('RLS permite gestión a admin/owner, lectura publicada a staff y nada a alumno', () => {
-  for (const table of ['wods', 'comunicados']) {
-    assert.match(migration, new RegExp(`ALTER TABLE public\\.${table} ENABLE ROW LEVEL SECURITY`));
-    assert.match(migration, new RegExp(`${table}_lectura_gestion[\\s\\S]*mi_rol\\(\\) IN \\('admin', 'owner'\\)`));
-    assert.match(migration, new RegExp(`${table}_lectura_staff_publicados[\\s\\S]*mi_rol\\(\\) = 'staff'[\\s\\S]*publicado`));
-  }
-  assert.doesNotMatch(migration, /mi_rol\(\).*alumno/);
-  assert.doesNotMatch(migration, /GRANT\s+DELETE/i);
-  assert.match(postflight, /Alumno obtuvo una política del portal coach/);
+test('RLS final permite gestión WOD a admin/owner/staff y alumno solo lectura publicada', () => {
+  assert.match(operationMigration, /wods_lectura_gestion[\s\S]*'admin', 'owner', 'staff'/);
+  assert.match(operationMigration, /wods_creacion_gestion[\s\S]*'admin', 'owner', 'staff'/);
+  assert.match(operationMigration, /wods_edicion_gestion[\s\S]*'admin', 'owner', 'staff'/);
+  assert.match(operationMigration, /wods_lectura_alumno_publicados[\s\S]*'alumno'[\s\S]*publicado/);
+  assert.doesNotMatch(operationMigration, /GRANT\s+DELETE/i);
 });
 
-test('staff ve solo WOD del día y comunicados publicados; no recibe controles de gestión', () => {
-  assert.match(wodPage, /!canManage[\s\S]*\.eq\("fecha", today\)\.eq\("publicado", true\)/);
+test('staff gestiona WOD y conserva comunicados publicados sin datos financieros', () => {
+  assert.match(wodPage, /canManageWodContent\(access\.role\)/);
   assert.match(announcementsPage, /!canManage[\s\S]*\.eq\("publicado", true\)\.lte\("fecha_publicacion"/);
   assert.match(navigation, /WOD[\s\S]*Comunicados/);
   assert.match(dashboard, /Búsqueda rápida de alumno[\s\S]*Próximos a vencer[\s\S]*Membresías vencidas[\s\S]*WOD del día[\s\S]*Comunicados recientes/);
@@ -117,10 +122,10 @@ test('staff conserva alta de clientes pero rutas financieras siguen bloqueadas',
   assert.match(expensesPage, /access\.role === "staff"[\s\S]*redirect\("\/"\)/);
   assert.match(reportsPage, /getReportAccess\(\)[\s\S]*if \(!access\) redirect\("\/"\)/);
   assert.match(reportsAccess, /!\["admin", "owner"\]\.includes\(profile\.rol\)[\s\S]*return null/);
-  assert.match(navigation, /staffSections = new Set\(\["\/", "\/clientes", "\/wod", "\/comunicados"\]\)/);
+  assert.match(navigation, /staffSections = new Set\(\["\/", "\/clientes", "\/membresias", "\/wod", "\/comunicados"\]\)/);
   assert.match(navigation, /role === "staff"[\s\S]*staffSections\.has\(href\)/);
   assert.match(clientManager, /Nuevo cliente/);
-  assert.match(clientManager, /\{canEdit && <td className="p-3[\s\S]*?editButton\(client\)/);
+  assert.match(clientManager, /\{canEdit && hasPrivateDetails\(client\) && <td className="p-3[\s\S]*?editButton\(client\)/);
 });
 
 test('preflight, postflight y dry-run comprueban aislamiento y terminan en ROLLBACK', () => {

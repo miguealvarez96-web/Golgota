@@ -17,7 +17,7 @@ const sections: { title: string; href: string; icon: PortalIconName }[] = [
   { title: "Usuarios", href: "/usuarios", icon: "users" },
 ];
 
-const staffSections = new Set(["/", "/clientes", "/wod", "/comunicados"]);
+const staffSections = new Set(["/", "/clientes", "/membresias", "/wod", "/comunicados"]);
 
 export default function PortalNavigation({ role }: { role: string }) {
   const pathname = usePathname();

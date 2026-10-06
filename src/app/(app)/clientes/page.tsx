@@ -1,6 +1,6 @@
 import ClientsManager from "@/components/clientes/clients-manager";
 import { getClientAccess } from "@/lib/clientes/access";
-import { canManageClients, clientStates, clientSearchFilter, type ClientRow, type MembershipSummary } from "@/lib/clientes/model";
+import { businessDate, canManageClients, clientStates, clientSearchFilter, type ClientListRow, type MembershipSummary } from "@/lib/clientes/model";
 import { chooseOverview, type OperationalMembership } from "@/lib/membresias/grouping";
 
 export default async function ClientesPage({ searchParams }: {
@@ -15,12 +15,8 @@ export default async function ClientesPage({ searchParams }: {
   try {
     const access = await getClientAccess();
     if (!access) return <ClientLoadError message="Tu sesión no permite consultar clientes. Vuelve a iniciar sesión." />;
-    let request = access.supabase.from("clientes")
-      .select("id,nombre_completo,cedula,celular,email,estado_cliente,fecha_registro", { count: "exact" })
-      .order("nombre_completo").order("id").range((page - 1) * pageSize, page * pageSize - 1);
-    if (query) request = request.or(clientSearchFilter(query));
-    if (state) request = request.eq("estado_cliente", state);
-    const { data, count, error } = await request;
+    const staff = access.role === "staff";
+    const { data, count, error } = await loadClients(access.supabase, staff, query, state, page, pageSize);
     if (error || !data || count === null) return <ClientLoadError message="No fue posible cargar los clientes. Inténtalo de nuevo." />;
 
     const memberships: Record<string, MembershipSummary> = {};
@@ -30,7 +26,7 @@ export default async function ClientesPage({ searchParams }: {
       // Proyección operativa aislada: no contiene importes, pagos ni saldos.
       const current = await access.supabase.from("v_membresias_verificacion")
         .select("membresia_id,cliente_id,plan,fecha_inicio,fecha_fin,estado_vigencia", { count: "exact" })
-        .in("cliente_id", data.map((client) => client.id))
+        .in("cliente_id", data.map((client: { id: string }) => client.id))
         .order("fecha_fin", { ascending: true });
       membershipError = Boolean(current.error) || current.count === null || current.count !== current.data?.length;
       if (!membershipError) {
@@ -43,15 +39,40 @@ export default async function ClientesPage({ searchParams }: {
             fecha_inicio: membership.fecha_inicio,
             fecha_fin: membership.fecha_fin,
             estado_vigencia: membership.estado_vigencia ?? "POR_INICIAR",
+            dias_restantes: remainingDays(membership.fecha_fin, businessDate()),
           };
         }
       }
     }
-    return <ClientsManager clients={data as ClientRow[]} total={count} page={page} pageSize={pageSize}
+    return <ClientsManager clients={data as ClientListRow[]} total={count} page={page} pageSize={pageSize}
       query={query} state={state} canEdit={canEdit} memberships={memberships} membershipError={membershipError} />;
   } catch {
     return <ClientLoadError message="No fue posible conectar con el listado de clientes. Inténtalo de nuevo." />;
   }
+}
+
+type ClientDatabase = NonNullable<Awaited<ReturnType<typeof getClientAccess>>>["supabase"];
+
+async function loadClients(supabase: ClientDatabase, staff: boolean, query: string, state: string, page: number, pageSize: number) {
+  const from = (page - 1) * pageSize;
+  const to = page * pageSize - 1;
+  if (staff) {
+    let request = supabase.from("clientes").select("id,nombre_completo,estado_cliente", { count: "exact" })
+      .order("nombre_completo").order("id").range(from, to);
+    if (query) request = request.ilike("nombre_completo", `%${query.replace(/[\\%_]/g, "\\$&")}%`);
+    if (state) request = request.eq("estado_cliente", state);
+    return request;
+  }
+  let request = supabase.from("clientes")
+    .select("id,nombre_completo,cedula,celular,email,estado_cliente,fecha_registro", { count: "exact" })
+    .order("nombre_completo").order("id").range(from, to);
+  if (query) request = request.or(clientSearchFilter(query));
+  if (state) request = request.eq("estado_cliente", state);
+  return request;
+}
+
+function remainingDays(end: string, today: string) {
+  return Math.round((Date.parse(`${end}T12:00:00Z`) - Date.parse(`${today}T12:00:00Z`)) / 86400000);
 }
 
 function ClientLoadError({ message }: { message: string }) {

@@ -9,8 +9,6 @@ export type CoachMembershipAlert = {
   membresia_id: string;
   cliente_id: string;
   cliente: string;
-  cedula: string;
-  celular: string | null;
   plan: string;
   fecha_inicio: string;
   fecha_fin: string;
@@ -37,7 +35,7 @@ export async function loadCoachDashboard(supabase: Database, today: string): Pro
       .order("fecha_fin", { ascending: false })
       .limit(40),
     supabase.from("wods")
-      .select("id,fecha,titulo,contenido,publicado,created_by,created_at,updated_at")
+      .select("id,fecha,titulo,contenido,horario_grupo,youtube_url,notas,publicado,created_by,created_at,updated_at")
       .eq("fecha", today)
       .eq("publicado", true)
       .maybeSingle(),
@@ -59,10 +57,10 @@ export async function loadCoachDashboard(supabase: Database, today: string): Pro
   }
   const operational = [...(expiringResult.data ?? []), ...Array.from(expiredLatest.values()).slice(0, 8)];
   const clientIds = Array.from(new Set(operational.map((membership) => membership.cliente_id)));
-  const clients = new Map<string, { nombre_completo: string; cedula: string; celular: string | null }>();
+  const clients = new Map<string, { nombre_completo: string }>();
   if (clientIds.length) {
     const { data, error } = await supabase.from("clientes")
-      .select("id,nombre_completo,cedula,celular")
+      .select("id,nombre_completo")
       .in("id", clientIds);
     if (error) throw new Error("No se pudieron cargar los alumnos del panel.");
     for (const client of data ?? []) clients.set(client.id, client);
@@ -74,8 +72,6 @@ export async function loadCoachDashboard(supabase: Database, today: string): Pro
     return [{
       ...membership,
       cliente: client.nombre_completo,
-      cedula: client.cedula,
-      celular: client.celular,
     } as CoachMembershipAlert];
   });
 
@@ -86,4 +82,3 @@ export async function loadCoachDashboard(supabase: Database, today: string): Pro
     announcements: (announcementsResult.data ?? []) as AnnouncementRow[],
   };
 }
-

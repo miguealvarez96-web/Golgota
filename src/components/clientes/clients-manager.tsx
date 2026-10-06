@@ -6,11 +6,11 @@ import { useRef, useState, useTransition, type FormEvent } from "react";
 import ClientForm from "./client-form";
 import PortalIcon from "@/components/layout/portal-icon";
 import VigencyBadge from "@/components/membresias/vigency-badge";
-import { clientStates, displayDate, type ClientRow, type MembershipSummary } from "@/lib/clientes/model";
+import { clientStates, displayDate, type ClientListRow, type ClientRow, type MembershipSummary } from "@/lib/clientes/model";
 import type { Vigency } from "@/lib/membresias/grouping";
 
 type Props = {
-  clients: ClientRow[]; total: number; page: number; pageSize: number; query: string; state: string;
+  clients: ClientListRow[]; total: number; page: number; pageSize: number; query: string; state: string;
   canEdit: boolean; memberships: Record<string, MembershipSummary>; membershipError: boolean;
 };
 
@@ -35,15 +35,17 @@ export default function ClientsManager({ clients, total, page, pageSize, query, 
   }
   function open(client: ClientRow | null, element: HTMLElement) { opener.current = element; setMessage(""); setForm({ client }); }
   function close() { setForm(null); (opener.current?.isConnected ? opener.current : newButton.current)?.focus(); }
-  function membership(client: ClientRow) {
+  function membership(client: ClientListRow) {
     if (membershipError) return <span className="text-brand-secondary">No disponible</span>;
     const current = memberships[client.id];
     if (!current) return <span className="text-brand-secondary">Sin membresía</span>;
     const state = (["POR_INICIAR", "VIGENTE", "POR_VENCER", "VENCE_HOY", "VENCIDA"].includes(current.estado_vigencia)
       ? current.estado_vigencia : "POR_INICIAR") as Vigency;
-    return <span className="block"><span className="flex flex-wrap items-center gap-2"><span className="font-medium">{current.plan}</span><VigencyBadge state={state} /></span><span className="mt-2 block text-xs text-brand-secondary">{displayDate(current.fecha_inicio)} — {displayDate(current.fecha_fin)}</span></span>;
+    const remaining = current.dias_restantes < 0 ? "Vencida" : current.dias_restantes === 0 ? "Vence hoy" : `${current.dias_restantes} días restantes`;
+    return <span className="block"><span className="flex flex-wrap items-center gap-2"><span className="font-medium">{current.plan}</span><VigencyBadge state={state} /></span><span className="mt-2 block text-xs text-brand-secondary">{displayDate(current.fecha_inicio)} — {displayDate(current.fecha_fin)} · {remaining}</span></span>;
   }
   const editButton = (client: ClientRow) => <button type="button" className="btn-secondary" onClick={(event) => open(client, event.currentTarget)} aria-label={`Editar a ${client.nombre_completo}`}>Editar</button>;
+  const hasPrivateDetails = (client: ClientListRow): client is ClientRow => "cedula" in client;
 
   return (
     <main className="portal-page">
@@ -53,7 +55,7 @@ export default function ClientsManager({ clients, total, page, pageSize, query, 
       </div>
       {message && <p role="status" className="mt-5 rounded-xl border border-brand-copper/50 bg-brand-copper/10 p-4 text-sm">{message}</p>}
       <form key={`${query}:${state}`} onSubmit={search} className="panel mt-7 grid items-end gap-4 p-4 sm:grid-cols-[minmax(0,1fr)_11rem_auto] sm:p-5" role="search">
-        <div><label htmlFor="client-search" className="field-label">Buscar cliente</label><input id="client-search" name="q" type="search" className="field" defaultValue={query} maxLength={100} placeholder="Nombre, cédula, teléfono o correo" /></div>
+        <div><label htmlFor="client-search" className="field-label">Buscar cliente</label><input id="client-search" name="q" type="search" className="field" defaultValue={query} maxLength={100} placeholder={canEdit ? "Nombre, cédula, teléfono o correo" : "Nombre del alumno"} /></div>
         <div><label htmlFor="client-state" className="field-label">Estado</label><select id="client-state" name="estado" defaultValue={state} className="field"><option value="">Todos los estados</option>{clientStates.map((value) => <option key={value}>{value}</option>)}</select></div>
         <button type="submit" className="btn-secondary" disabled={pending}>{pending ? "Buscando…" : "Buscar"}</button>
       </form>
@@ -68,11 +70,11 @@ export default function ClientsManager({ clients, total, page, pageSize, query, 
         ) : (
           <>
             <div className="panel hidden overflow-hidden xl:block"><table className="w-full table-fixed text-left text-sm">
-              <caption className="sr-only">Listado de clientes, contacto y estado</caption>
-              <thead className="border-b border-brand-muted/30 bg-brand-bg/30 text-xs uppercase tracking-wider text-brand-secondary"><tr><th scope="col" className="w-1/4 p-4">Cliente</th><th scope="col" className="p-4">Contacto</th><th scope="col" className="p-4">Estado / registro</th><th scope="col" className="p-4">Membresía</th>{canEdit && <th scope="col" className="w-24 p-4"><span className="sr-only">Acciones</span></th>}</tr></thead>
-              <tbody className="divide-y divide-brand-muted/20">{clients.map((client) => <tr key={client.id} className="hover:bg-brand-bg/20"><td className="p-4 align-top"><p className="font-semibold">{client.nombre_completo}</p><p className="mt-1 text-xs text-brand-secondary">ID · {client.cedula}</p></td><td className="break-words p-4 align-top"><p>{client.celular || "Sin teléfono"}</p><p className="mt-1 text-xs text-brand-secondary">{client.email || "Sin correo"}</p></td><td className="p-4 align-top"><ClientStatus value={client.estado_cliente} /><p className="mt-2 text-xs text-brand-secondary">{displayDate(client.fecha_registro)}</p></td><td className="p-4 align-top text-xs">{membership(client)}</td>{canEdit && <td className="p-3 align-top">{editButton(client)}</td>}</tr>)}</tbody>
+              <caption className="sr-only">Listado de clientes y estado de membresía</caption>
+              <thead className="border-b border-brand-muted/30 bg-brand-bg/30 text-xs uppercase tracking-wider text-brand-secondary"><tr><th scope="col" className="w-1/4 p-4">Cliente</th>{canEdit && <th scope="col" className="p-4">Contacto</th>}<th scope="col" className="p-4">Estado</th><th scope="col" className="p-4">Membresía</th>{canEdit && <th scope="col" className="w-24 p-4"><span className="sr-only">Acciones</span></th>}</tr></thead>
+              <tbody className="divide-y divide-brand-muted/20">{clients.map((client) => <tr key={client.id} className="hover:bg-brand-bg/20"><td className="p-4 align-top"><p className="font-semibold">{client.nombre_completo}</p>{canEdit && hasPrivateDetails(client) && <p className="mt-1 text-xs text-brand-secondary">ID · {client.cedula}</p>}</td>{canEdit && hasPrivateDetails(client) && <td className="break-words p-4 align-top"><p>{client.celular || "Sin teléfono"}</p><p className="mt-1 text-xs text-brand-secondary">{client.email || "Sin correo"}</p></td>}<td className="p-4 align-top"><ClientStatus value={client.estado_cliente} />{canEdit && hasPrivateDetails(client) && <p className="mt-2 text-xs text-brand-secondary">{displayDate(client.fecha_registro)}</p>}</td><td className="p-4 align-top text-xs">{membership(client)}</td>{canEdit && hasPrivateDetails(client) && <td className="p-3 align-top">{editButton(client)}</td>}</tr>)}</tbody>
             </table></div>
-            <div className="grid gap-4 md:grid-cols-2 xl:hidden">{clients.map((client) => <article key={client.id} className="panel min-w-0 p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0"><h2 className="font-semibold">{client.nombre_completo}</h2><p className="mt-1 text-xs text-brand-secondary">ID · {client.cedula}</p></div><ClientStatus value={client.estado_cliente} /></div><dl className="mt-5 space-y-3 text-sm"><div><dt className="text-xs text-brand-secondary">Teléfono</dt><dd className="mt-1">{client.celular || "Sin teléfono"}</dd></div><div><dt className="text-xs text-brand-secondary">Correo</dt><dd className="mt-1 break-words">{client.email || "Sin correo"}</dd></div><div><dt className="text-xs text-brand-secondary">Fecha de registro</dt><dd className="mt-1">{displayDate(client.fecha_registro)}</dd></div><div><dt className="text-xs text-brand-secondary">Membresía actual</dt><dd className="mt-1">{membership(client)}</dd></div></dl>{canEdit && <div className="mt-5 border-t border-brand-muted/30 pt-4">{editButton(client)}</div>}</article>)}</div>
+            <div className="grid gap-4 md:grid-cols-2 xl:hidden">{clients.map((client) => <article key={client.id} className="panel min-w-0 p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0"><h2 className="font-semibold">{client.nombre_completo}</h2>{canEdit && hasPrivateDetails(client) && <p className="mt-1 text-xs text-brand-secondary">ID · {client.cedula}</p>}</div><ClientStatus value={client.estado_cliente} /></div><dl className="mt-5 space-y-3 text-sm">{canEdit && hasPrivateDetails(client) && <><div><dt className="text-xs text-brand-secondary">Teléfono</dt><dd className="mt-1">{client.celular || "Sin teléfono"}</dd></div><div><dt className="text-xs text-brand-secondary">Correo</dt><dd className="mt-1 break-words">{client.email || "Sin correo"}</dd></div><div><dt className="text-xs text-brand-secondary">Fecha de registro</dt><dd className="mt-1">{displayDate(client.fecha_registro)}</dd></div></>}<div><dt className="text-xs text-brand-secondary">Membresía actual</dt><dd className="mt-1">{membership(client)}</dd></div></dl>{canEdit && hasPrivateDetails(client) && <div className="mt-5 border-t border-brand-muted/30 pt-4">{editButton(client)}</div>}</article>)}</div>
           </>
         )}
       </div>

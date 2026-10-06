@@ -20,7 +20,7 @@ test('la navegación final coincide con cada rol y oculta placeholders', () => {
   for (const route of ['/clientes', '/membresias', '/productos', '/pagos-reportados', '/wod', '/comunicados', '/reportes', '/solicitudes-privacidad']) {
     assert.match(navigation, new RegExp(`href: "${route.replaceAll('/', '\\/')}"`));
   }
-  assert.match(navigation, /staffSections = new Set\(\["\/", "\/clientes", "\/wod", "\/comunicados"\]\)/);
+  assert.match(navigation, /staffSections = new Set\(\["\/", "\/clientes", "\/membresias", "\/wod", "\/comunicados"\]\)/);
   assert.doesNotMatch(navigation, /href:\s*"\/(?:asistencia|gastos)"/);
   assert.match(studentLayout, /href="\/portal"[\s\S]*href="\/privacidad"[\s\S]*<LogoutButton/);
 });

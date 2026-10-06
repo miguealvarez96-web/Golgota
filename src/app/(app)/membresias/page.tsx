@@ -7,11 +7,10 @@ import { filterClientGroups, groupByClient, vigencyLabel, vigencyOf, type Client
 
 type Filters = { q?: string; filtro?: string; pagina?: string; cliente?: string };
 const pageSize = 20;
-const staffFilters: MembershipFilter[] = ["", "vigentes", "por_vencer", "vencidas"];
-const financialFilters: MembershipFilter[] = [...staffFilters, "saldo_pendiente", "pagadas"];
+const membershipFilters: MembershipFilter[] = ["", "vigentes", "por_vencer", "vence_hoy", "vencidas", "por_iniciar"];
 const filterLabels: Record<MembershipFilter, string> = {
   "": "Todos", vigentes: "Vigentes", por_vencer: "Por vencer",
-  vencidas: "Vencidas", saldo_pendiente: "Saldo pendiente", pagadas: "Pagadas",
+  vence_hoy: "Vence hoy", vencidas: "Vencidas", por_iniciar: "Por iniciar",
 };
 
 export default async function MembresiasPage({ searchParams }: { searchParams: Filters }) {
@@ -19,7 +18,7 @@ export default async function MembresiasPage({ searchParams }: { searchParams: F
   if (!access) return <Notice text="Tu sesión no permite consultar membresías." />;
   const staff = access.role === "staff";
   const query = typeof searchParams.q === "string" ? searchParams.q.trim().slice(0, 100) : "";
-  const filter = (staff ? staffFilters : financialFilters).find((value) => value === searchParams.filtro) ?? "";
+  const filter = membershipFilters.find((value) => value === searchParams.filtro) ?? "";
   const clientId = typeof searchParams.cliente === "string" && /^[0-9a-f-]{36}$/i.test(searchParams.cliente) ? searchParams.cliente : "";
   const requestedPage = Number(searchParams.pagina);
   const page = Number.isSafeInteger(requestedPage) && requestedPage > 0 ? Math.min(requestedPage, 100000) : 1;
@@ -29,7 +28,7 @@ export default async function MembresiasPage({ searchParams }: { searchParams: F
       ? await loadOperationalMemberships(access.supabase, clientId || undefined)
       : await loadFinancialMemberships(access.supabase, clientId || undefined);
     const ids = Array.from(new Set(rows.map((row) => row.cliente_id)));
-    const clients = await loadClientIdentities(access.supabase, ids);
+    const clients = await loadClientIdentities(access.supabase, ids, !staff);
     const groups = groupByClient(rows as (OperationalMembership | FinancialMembership)[], clients);
     const filtered = filterClientGroups(groups, query, filter);
     const visible = filtered.slice((page - 1) * pageSize, page * pageSize);
@@ -66,10 +65,10 @@ function MembershipShell({ staff, query, filter, clientId, page, total, groups, 
     <form action="/membresias" className="panel mt-7 grid items-end gap-4 p-4 sm:grid-cols-[minmax(0,1fr)_13rem_auto] sm:p-5" role="search">
       {clientId && <input type="hidden" name="cliente" value={clientId} />}
       <div><label htmlFor="member-search" className="field-label">Buscar cliente</label>
-        <input id="member-search" name="q" type="search" className="field" defaultValue={query} placeholder="Nombre o identificación" /></div>
+        <input id="member-search" name="q" type="search" className="field" defaultValue={query} placeholder={staff ? "Nombre del alumno" : "Nombre o identificación"} /></div>
       <div><label htmlFor="member-filter" className="field-label">Filtro</label>
         <select id="member-filter" name="filtro" className="field" defaultValue={filter}>
-          {(staff ? staffFilters : financialFilters).map((value) => <option key={value} value={value}>{filterLabels[value]}</option>)}
+          {membershipFilters.map((value) => <option key={value} value={value}>{filterLabels[value]}</option>)}
         </select></div>
       <button type="submit" className="btn-secondary">Filtrar</button>
     </form>
@@ -95,22 +94,34 @@ function ClientCard({ group, staff, plans }: {
   const item = group.overview;
   const state = item ? vigencyOf(item) : null;
   const plan = item ? ("plan_id" in item ? plans.get(item.plan_id) ?? "Plan no disponible" : item.plan) : "Sin membresía no cancelada";
-  return <article className="panel p-5">
-    <div className="flex flex-wrap items-start justify-between gap-4">
-      <div><h2 className="text-base font-semibold text-brand-text">{group.client.nombre_completo}</h2>
-        <p className="mt-1 text-sm text-brand-secondary">Identificación · {group.client.cedula}</p></div>
+  const history = [...group.memberships].sort((a, b) => b.fecha_fin.localeCompare(a.fecha_fin));
+  return <details className="panel group overflow-hidden">
+    <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-4 p-5 marker:hidden">
+      <div className="min-w-0"><div className="flex items-center gap-2"><span aria-hidden="true" className="text-brand-copper transition group-open:rotate-90">▶</span><h2 className="font-semibold text-brand-text">{group.client.nombre_completo}</h2></div>
+        {!staff && group.client.cedula && <p className="ml-6 mt-1 text-sm text-brand-secondary">Identificación · {group.client.cedula}</p>}
+        <p className="ml-6 mt-1 text-sm text-brand-secondary">{item ? `${state === "POR_INICIAR" ? "inicia" : "vence"} ${displayDate(state === "POR_INICIAR" ? item.fecha_inicio : item.fecha_fin)}` : "Sin membresía"}</p></div>
       {state && <VigencyBadge state={state} />}
+    </summary>
+    <div className="border-t border-brand-border p-5">
+      <h3 className="text-sm font-semibold uppercase tracking-wide text-brand-secondary">Membresía actual</h3>
+      <dl className={`mt-4 grid gap-4 text-sm sm:grid-cols-2 ${staff ? "lg:grid-cols-4" : "lg:grid-cols-6"}`}>
+        <Metric label="Plan" value={plan} />
+        <Metric label="Inicio" value={item ? displayDate(item.fecha_inicio) : "—"} />
+        <Metric label="Fin" value={item ? displayDate(item.fecha_fin) : "—"} />
+        <Metric label="Estado" value={state ? vigencyLabel(state) : "Sin membresía"} />
+        {!staff && <Metric label="Estado de pago" value={item && "estado_pago" in item ? item.estado_pago : "—"} />}
+        {!staff && <Metric label="Saldo" value={item && "saldo" in item ? moneyLabel(Number(item.saldo)) : "—"} />}
+      </dl>
+      <h3 className="mt-6 border-t border-brand-border pt-5 text-sm font-semibold uppercase tracking-wide text-brand-secondary">Historial de membresías · {history.length}</h3>
+      <ol className="mt-3 divide-y divide-brand-border">{history.map((membership, index) => {
+        const membershipState = vigencyOf(membership);
+        const membershipPlan = "plan_id" in membership ? plans.get(membership.plan_id) ?? "Plan no disponible" : membership.plan;
+        const key = "id" in membership ? membership.id : membership.membresia_id || `${membership.fecha_fin}-${index}`;
+        return <li key={key} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm"><div><p className="font-medium">{membershipPlan}</p><p className="mt-1 text-brand-secondary">{displayDate(membership.fecha_inicio)} — {displayDate(membership.fecha_fin)}</p></div><div className="flex items-center gap-3"><VigencyBadge state={membershipState} />{!staff && "saldo" in membership && <span className="text-brand-secondary">Saldo {moneyLabel(Number(membership.saldo))}</span>}</div></li>;
+      })}</ol>
+      <Link className="btn-secondary mt-5" href={`/membresias/cliente/${group.client.id}`}>Abrir historial completo</Link>
     </div>
-    <dl className={`mt-5 grid gap-4 border-t border-brand-border pt-4 text-sm sm:grid-cols-2 ${staff ? "lg:grid-cols-3" : "lg:grid-cols-6"}`}>
-      <Metric label="Plan actual" value={plan} />
-      <Metric label="Inicio" value={item ? displayDate(item.fecha_inicio) : "—"} />
-      <Metric label="Vencimiento" value={item ? displayDate(item.fecha_fin) : "—"} />
-      <Metric label="Vigencia" value={state ? vigencyLabel(state) : "Sin membresía"} />
-      {!staff && <Metric label="Estado de pago" value={item && "estado_pago" in item ? item.estado_pago : "—"} />}
-      {!staff && <Metric label="Saldo pendiente" value={item && "saldo" in item ? moneyLabel(Number(item.saldo)) : "—"} />}
-    </dl>
-    <Link className="btn-secondary mt-5" href={`/membresias/cliente/${group.client.id}`}>Ver historial del cliente</Link>
-  </article>;
+  </details>;
 }
 
 function Metric({ label, value }: { label: string; value: string }) {

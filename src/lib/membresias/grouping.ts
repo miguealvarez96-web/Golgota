@@ -1,11 +1,11 @@
 export type Vigency = "POR_INICIAR" | "VIGENTE" | "POR_VENCER" | "VENCE_HOY" | "VENCIDA";
-export type MembershipFilter = "" | "vigentes" | "por_vencer" | "vencidas" | "saldo_pendiente" | "pagadas";
+export type MembershipFilter = "" | "vigentes" | "por_vencer" | "vence_hoy" | "vencidas" | "por_iniciar";
 export type MembershipBase = { cliente_id: string; fecha_fin: string; estado_vigencia: string | null };
 export type FinancialMembership = MembershipBase & {
   id: string; plan_id: string; fecha_inicio: string; saldo: number; estado_pago: string;
 };
 export type OperationalMembership = MembershipBase & { membresia_id: string; plan: string; fecha_inicio: string };
-export type ClientIdentity = { id: string; nombre_completo: string; cedula: string };
+export type ClientIdentity = { id: string; nombre_completo: string; cedula?: string };
 export type ClientMembershipGroup<T extends MembershipBase> = {
   client: ClientIdentity; memberships: T[]; overview: T | null;
 };
@@ -67,14 +67,14 @@ export function filterClientGroups<T extends MembershipBase>(groups: ClientMembe
   const needle = query.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("es");
   return groups.filter(({ client, overview }) => {
     const name = client.nombre_completo.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("es");
-    if (needle && !name.includes(needle) && !client.cedula.includes(query)) return false;
+    if (needle && !name.includes(needle) && !client.cedula?.includes(query)) return false;
     if (!filter) return true;
     if (!overview) return false;
     const state = vigencyOf(overview);
-    if (filter === "vigentes") return ["VIGENTE", "POR_VENCER", "VENCE_HOY"].includes(state);
+    if (filter === "vigentes") return state === "VIGENTE";
     if (filter === "por_vencer") return state === "POR_VENCER";
+    if (filter === "vence_hoy") return state === "VENCE_HOY";
     if (filter === "vencidas") return state === "VENCIDA";
-    if (filter === "saldo_pendiente") return "saldo" in overview && Number(overview.saldo) > 0;
-    return "estado_pago" in overview && overview.estado_pago === "PAGADO";
+    return state === "POR_INICIAR";
   });
 }

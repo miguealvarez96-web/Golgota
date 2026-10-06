@@ -33,11 +33,14 @@ export async function loadOperationalMemberships(supabase: Database, clientId?: 
   }
 }
 
-export async function loadClientIdentities(supabase: Database, ids: string[]) {
+export async function loadClientIdentities(supabase: Database, ids: string[], includeIdentification = true) {
   const clients = new Map<string, ClientIdentity>();
   for (let offset = 0; offset < ids.length; offset += 200) {
-    const { data, error } = await supabase.from("clientes")
-      .select("id,nombre_completo,cedula").in("id", ids.slice(offset, offset + 200));
+    const batch = ids.slice(offset, offset + 200);
+    const result = includeIdentification
+      ? await supabase.from("clientes").select("id,nombre_completo,cedula").in("id", batch)
+      : await supabase.from("clientes").select("id,nombre_completo").in("id", batch);
+    const { data, error } = result as { data: ClientIdentity[] | null; error: unknown };
     if (error) throw new Error("No se pudieron cargar los clientes.");
     for (const client of data ?? []) clients.set(client.id, client);
   }

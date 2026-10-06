@@ -139,7 +139,7 @@ test('la bandeja segura contiene trazabilidad y solo admite admin/owner', () => 
   assert.doesNotMatch(adminPage, /from\("reportes_pago_alumno"\)/);
 });
 
-test('filtros por estado y búsqueda de alumno funcionan sin distinguir tildes', () => {
+test('filtros por estado y búsqueda de alumno o fecha funcionan sin distinguir tildes', () => {
   const base = {
     id: reportId, cliente_id: reportId, usuario_id: reportId, membresia_id: null, monto: 20,
     fecha_pago: '2026-10-01', banco_origen: 'Pichincha', referencia: 'ABC-1',
@@ -153,15 +153,17 @@ test('filtros por estado y búsqueda de alumno funcionan sin distinguir tildes',
     membresia_fecha_fin: null, saldo_membresia: 30, estado_pago_membresia: 'PENDIENTE',
     revisor: null, monto_aplicado: null,
   };
-  const approved = { ...base, id: 'b98e5f70-849c-4df8-906a-2b20654fdb39', estado: 'APROBADO' };
+  const approved = { ...base, id: 'b98e5f70-849c-4df8-906a-2b20654fdb39', estado: 'APROBADO', fecha_pago: '2026-10-02' };
   assert.deepEqual(model.filterAdminPaymentReports([base, approved], 'PENDIENTE', 'alvarez'), [base]);
   assert.deepEqual(model.filterAdminPaymentReports([base, approved], 'APROBADO', ''), [approved]);
+  assert.deepEqual(model.filterAdminPaymentReports([base, approved], 'TODOS', '2026-10-02'), [approved]);
 });
 
 test('UI protege doble envío y muestra todos los datos requeridos', () => {
   assert.match(manager, /activeReview\.current/);
   assert.match(manager, /window\.confirm/);
-  assert.match(manager, /Buscar alumno/);
+  assert.match(manager, /Buscar alumno o fecha/);
+  assert.match(manager, /<details[\s\S]*<summary/);
   for (const label of ['Membresía', 'Monto reportado', 'Fecha del pago', 'Saldo actual', 'Cuenta reportante', 'Revisor', 'Fecha de revisión', 'Pago real', 'Monto aplicado', 'PaymentReceiptButton']) {
     assert.match(manager, new RegExp(label));
   }

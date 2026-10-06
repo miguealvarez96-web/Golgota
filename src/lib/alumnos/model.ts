@@ -209,6 +209,8 @@ export function filterAdminPaymentReports(
       report.banco_origen ?? "",
       report.referencia ?? "",
       report.observacion ?? "",
+      report.fecha_pago,
+      report.created_at,
     ].join(" ")).includes(normalizedQuery);
   });
 }
