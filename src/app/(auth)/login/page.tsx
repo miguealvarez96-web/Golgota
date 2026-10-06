@@ -8,16 +8,19 @@ import Brand from "@/components/layout/brand";
 import { createClient } from "@/lib/supabase/client";
 
 const loginSchema = z.object({
-  email: z.string().email("Ingresa un correo electrónico válido."),
-  password: z
-    .string()
-    .min(6, "La contraseña debe tener al menos 6 caracteres."),
+  identity: z.string().trim().min(1, "Ingresa tu correo o usuario.").max(255),
+  password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres."),
+}).superRefine((value, context) => {
+  const valid = value.identity.includes("@")
+    ? z.string().email().safeParse(value.identity).success
+    : /^[a-z0-9._-]{3,50}$/.test(value.identity.toLowerCase());
+  if (!valid) context.addIssue({ code: "custom", path: ["identity"], message: "Ingresa un correo o usuario válido." });
 });
 
 export default function LoginPage() {
   const supabase = createClient();
 
-  const [email, setEmail] = useState("");
+  const [identity, setIdentity] = useState("");
   const [password, setPassword] = useState("");
 
   const [error, setError] = useState<string | null>(null);
@@ -39,7 +42,7 @@ export default function LoginPage() {
     setMessage(null);
 
     const validation = loginSchema.safeParse({
-      email,
+      identity,
       password,
     });
 
@@ -51,14 +54,29 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
+      if (!validation.data.identity.includes("@")) {
+        const response = await fetch("/api/auth/internal-login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: validation.data.identity.toLowerCase(), password: validation.data.password }),
+        });
+        const result = await response.json().catch(() => null) as { ok?: boolean; message?: string } | null;
+        if (!response.ok || !result?.ok) {
+          setError(result?.message ?? "Correo, usuario o contraseña incorrectos.");
+          return;
+        }
+        window.location.replace("/");
+        return;
+      }
+
       const { data, error: loginError } = await supabase.auth.signInWithPassword({
-        email: validation.data.email,
+        email: validation.data.identity.toLowerCase(),
         password: validation.data.password,
       });
 
       if (loginError) {
         setError(loginError.code === "invalid_credentials"
-          ? "Correo o contraseña incorrectos."
+          ? "Correo, usuario o contraseña incorrectos."
           : "No fue posible iniciar sesión. Comprueba tu conexión e inténtalo de nuevo.");
         return;
       }
@@ -85,7 +103,7 @@ export default function LoginPage() {
     const emailValidation = z
       .string()
       .email("Ingresa primero un correo electrónico válido.")
-      .safeParse(email);
+      .safeParse(identity);
 
     if (!emailValidation.success) {
       setError(emailValidation.error.issues[0].message);
@@ -136,19 +154,19 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="mt-9 space-y-5">
           <div>
             <label
-              htmlFor="email"
+              htmlFor="identity"
               className="field-label"
             >
-              Correo electrónico
+              Correo o usuario
             </label>
 
             <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              autoComplete="email"
-              placeholder="correo@ejemplo.com"
+              id="identity"
+              type="text"
+              value={identity}
+              onChange={(event) => setIdentity(event.target.value)}
+              autoComplete="username"
+              placeholder="correo@ejemplo.com o usuario"
               required
               className="field min-h-12 px-4"
             />
@@ -175,7 +193,7 @@ export default function LoginPage() {
           </div>
 
           <div className="text-right">
-            <button
+            {identity && !identity.includes("@") ? <p className="text-sm text-brand-secondary">Si olvidaste tu contraseña, solicita al administrador que la restablezca.</p> : <button
               type="button"
               onClick={handlePasswordRecovery}
               disabled={recoveryLoading}
@@ -184,7 +202,7 @@ export default function LoginPage() {
               {recoveryLoading
                 ? "Enviando..."
                 : "¿Olvidaste tu contraseña?"}
-            </button>
+            </button>}
           </div>
 
           {error && (

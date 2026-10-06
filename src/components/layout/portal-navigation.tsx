@@ -14,6 +14,7 @@ const sections: { title: string; href: string; icon: PortalIconName }[] = [
   { title: "Comunicados", href: "/comunicados", icon: "announcements" },
   { title: "Reportes", href: "/reportes", icon: "reports" },
   { title: "Privacidad", href: "/solicitudes-privacidad", icon: "privacy" },
+  { title: "Usuarios", href: "/usuarios", icon: "users" },
 ];
 
 const staffSections = new Set(["/", "/clientes", "/wod", "/comunicados"]);
@@ -21,10 +22,11 @@ const staffSections = new Set(["/", "/clientes", "/wod", "/comunicados"]);
 export default function PortalNavigation({ role }: { role: string }) {
   const pathname = usePathname();
 
-  const visibleSections =
-    role === "staff"
-      ? sections.filter(({ href }) => staffSections.has(href))
-      : sections;
+  const visibleSections = sections.filter(({ href }) => {
+    if (href === "/usuarios") return role === "admin";
+    if (role === "staff") return staffSections.has(href);
+    return true;
+  });
 
   return (
     <nav aria-label="Navegación del portal">
