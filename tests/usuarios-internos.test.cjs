@@ -24,7 +24,6 @@ function load(relative, mocks = {}) {
 
 const model = load('src/lib/usuarios-internos/model.ts');
 const loginSource = read('src/app/(auth)/login/page.tsx');
-const routeSource = read('src/app/api/auth/internal-login/route.ts');
 const actionsSource = read('src/app/(app)/usuarios/actions.ts');
 const migration = read('supabase/migrations/20261010_usuarios_internos.sql');
 const preflight = read('supabase/preflight/20261010_preflight_usuarios_internos.sql');
@@ -36,100 +35,22 @@ const navigation = read('src/components/layout/portal-navigation.tsx');
 const adminClient = read('src/lib/supabase/admin.ts');
 const macro = read('scripts/cerrar-bloque-usuarios-internos.ps1');
 
-function routeHarness({
-  authError = null,
-  profileError = null,
-  authLookupError = null,
-  role = 'owner',
-  active = true,
-  username = 'diego',
-  profile = true,
-  accountType = 'internal',
-  resolvedEmail = `${username}@golgota.internal`,
-} = {}) {
-  let signedOut = false;
-  const calls = { adminLookups: [], signIns: [] };
-  const userId = '00000000-0000-4000-8000-000000000001';
-  const sessionClient = {
-    auth: {
-      signInWithPassword: async (credentials) => {
-        calls.signIns.push(credentials);
-        return authError
-        ? { data: { user: null, session: null }, error: authError }
-        : { data: { user: { id: userId, email: credentials.email }, session: {} }, error: null };
-      },
-      signOut: async () => { signedOut = true; },
-    },
-  };
-  const adminClient = {
-    from: () => ({
-      select: () => ({
-        eq: (column, value) => {
-          calls.adminLookups.push({ column, value });
-          return {
-            maybeSingle: async () => ({
-              data: profile ? { id: userId, login_username: username, rol: role, activo: active } : null,
-              error: profileError,
-            }),
-          };
-        },
-      }),
-    }),
-    auth: { admin: {
-      getUserById: async () => authLookupError
-        ? { data: { user: null }, error: authLookupError }
-        : { data: { user: { id: userId, email: resolvedEmail, user_metadata: { account_type: accountType } } }, error: null },
-    } },
-  };
-  const route = load('src/app/api/auth/internal-login/route.ts', {
-    '@/lib/supabase/admin': { createAdminClient: () => adminClient },
-    '@/lib/supabase/server': { createClient: () => sessionClient },
-    '@/lib/usuarios-internos/model': model,
-  });
-  return { route, calls, signedOut: () => signedOut };
-}
-
 test('el login de alumno conserva email/password y la recuperacion por correo', () => {
-  assert.match(loginSource, /identity\.includes\("@"\)[\s\S]*signInWithPassword/);
+  assert.match(loginSource, /identity\.includes\("@"\)[\s\S]*identity\.toLowerCase\(\)[\s\S]*signInWithPassword/);
   assert.match(loginSource, /resetPasswordForEmail/);
   assert.match(loginSource, /Crear cuenta de alumno/);
 });
 
-test('carla, diego y coach1 autentican con el email real resuelto server-side', async () => {
-  for (const [username, role] of [['carla', 'owner'], ['diego', 'owner'], ['coach1', 'staff']]) {
-    const resolvedEmail = `${username}@auth-source.invalid`;
-    const { route, calls } = routeHarness({ role, username, resolvedEmail });
-    const response = await route.POST(new Request('http://test/api/auth/internal-login', {
-      method: 'POST', body: JSON.stringify({ username: username.toUpperCase(), password: 'password-seguro' }),
-    }));
-    assert.equal(response.status, 200);
-    assert.deepEqual(await response.json(), { ok: true });
-    assert.deepEqual(calls.adminLookups, [{ column: 'login_username', value: username }]);
-    assert.deepEqual(calls.signIns, [{ email: resolvedEmail, password: 'password-seguro' }]);
-  }
+test('owner y staff autentican directo con email tecnico y validan su perfil propio', () => {
   assert.equal(model.internalEmail('carla'), 'carla@golgota.internal');
   assert.match(actionsSource, /const email = internalEmail\(parsed\.data\.username\)/);
-  assert.match(routeSource, /createAdminClient\(\)[\s\S]*\.eq\("login_username", username\)[\s\S]*getUserById\(profile\.id\)/);
-  assert.doesNotMatch(routeSource, /email:\s*internalEmail\(/);
-});
-
-test('username inexistente, usuario inactivo y password incorrecto reciben el mismo error generico', async () => {
-  const missing = routeHarness({ profile: false });
-  const inactive = routeHarness({ active: false });
-  const wrongPassword = routeHarness({ authError: { code: 'invalid_credentials' } });
-  const request = () => new Request('http://test/api/auth/internal-login', { method: 'POST', body: JSON.stringify({ username: 'diego', password: 'password-seguro' }) });
-  const missingResponse = await missing.route.POST(request());
-  const inactiveResponse = await inactive.route.POST(request());
-  const wrongPasswordResponse = await wrongPassword.route.POST(request());
-  assert.equal(missingResponse.status, 401);
-  assert.equal(inactiveResponse.status, 401);
-  assert.equal(wrongPasswordResponse.status, 401);
-  const missingBody = await missingResponse.json();
-  assert.deepEqual(await inactiveResponse.json(), missingBody);
-  assert.deepEqual(await wrongPasswordResponse.json(), missingBody);
-  assert.deepEqual(missing.calls.signIns, []);
-  assert.deepEqual(inactive.calls.signIns, []);
-  assert.equal(inactive.signedOut(), false);
+  assert.match(loginSource, /usernameSchema\.parse\(validation\.data\.identity\)/);
+  assert.match(loginSource, /internalEmail\(internalUsername\)/);
+  assert.match(loginSource, /signInWithPassword\(\{[\s\S]*email,/);
+  assert.match(loginSource, /\.from\("usuarios"\)[\s\S]*profile\?\.activo === true/);
+  assert.match(loginSource, /profile\.rol === "owner"[\s\S]*profile\.rol === "staff"/);
+  assert.match(loginSource, /auth\.signOut\(\)/);
+  assert.doesNotMatch(loginSource, /\/api\/auth\/internal-login/);
 });
 
 test('solo owner y staff son roles aceptados y no pueden escalar a admin', () => {

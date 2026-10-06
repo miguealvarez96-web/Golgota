@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import Brand from "@/components/layout/brand";
 import { createClient } from "@/lib/supabase/client";
+import { internalEmail, usernameSchema } from "@/lib/usuarios-internos/model";
 
 const loginSchema = z.object({
   identity: z.string().trim().min(1, "Ingresa tu correo o usuario.").max(255),
@@ -13,7 +14,7 @@ const loginSchema = z.object({
 }).superRefine((value, context) => {
   const valid = value.identity.includes("@")
     ? z.string().email().safeParse(value.identity).success
-    : /^[a-z0-9._-]{3,50}$/.test(value.identity.toLowerCase());
+    : usernameSchema.safeParse(value.identity).success;
   if (!valid) context.addIssue({ code: "custom", path: ["identity"], message: "Ingresa un correo o usuario válido." });
 });
 
@@ -52,25 +53,18 @@ export default function LoginPage() {
     }
 
     setLoading(true);
+    let internalSessionStarted = false;
 
     try {
-      if (!validation.data.identity.includes("@")) {
-        const response = await fetch("/api/auth/internal-login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username: validation.data.identity.toLowerCase(), password: validation.data.password }),
-        });
-        const result = await response.json().catch(() => null) as { ok?: boolean; message?: string } | null;
-        if (!response.ok || !result?.ok) {
-          setError(result?.message ?? "Correo, usuario o contraseña incorrectos.");
-          return;
-        }
-        window.location.replace("/");
-        return;
-      }
+      const internalUsername = validation.data.identity.includes("@")
+        ? null
+        : usernameSchema.parse(validation.data.identity);
+      const email = internalUsername
+        ? internalEmail(internalUsername)
+        : validation.data.identity.toLowerCase();
 
       const { data, error: loginError } = await supabase.auth.signInWithPassword({
-        email: validation.data.identity.toLowerCase(),
+        email,
         password: validation.data.password,
       });
 
@@ -86,10 +80,36 @@ export default function LoginPage() {
         return;
       }
 
+      if (internalUsername) {
+        internalSessionStarted = true;
+        const { data: profile, error: profileError } = await supabase
+          .from("usuarios")
+          .select("login_username,rol,activo")
+          .eq("id", data.user.id)
+          .single();
+        const validInternalProfile = !profileError
+          && profile?.activo === true
+          && profile.login_username === internalUsername
+          && (profile.rol === "owner" || profile.rol === "staff");
+
+        if (!validInternalProfile) {
+          await supabase.auth.signOut();
+          setError("Correo, usuario o contraseña incorrectos.");
+          return;
+        }
+      }
+
       // El SDK ya persistió las cookies. Una navegación completa permite que
       // middleware y layout lean la nueva sesión sin reutilizar el router cache.
       window.location.replace("/");
     } catch {
+      if (internalSessionStarted) {
+        try {
+          await supabase.auth.signOut();
+        } catch {
+          // No exponer detalles del fallo de red ni dejar continuar al portal.
+        }
+      }
       setError("No fue posible iniciar sesión. Comprueba tu conexión e inténtalo de nuevo.");
     } finally {
       setLoading(false);

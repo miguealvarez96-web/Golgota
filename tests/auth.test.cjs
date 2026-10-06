@@ -6,6 +6,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const Module = require('node:module');
 const ts = require('typescript');
+const { z } = require('zod');
 const { NextRequest } = require('next/server');
 
 function load(relative, mocks, source) {
@@ -22,14 +23,39 @@ function load(relative, mocks, source) {
   return module.exports;
 }
 
-function loginHarness(signIn, source) {
-  const states = ['test@example.invalid', 'test-only-password', null, null, false, false];
+function loginHarness(signIn, source, options = {}) {
+  const states = [options.identity ?? 'test@example.invalid', 'test-only-password', null, null, false, false];
   let cursor = 0;
   const navigations = [];
+  const calls = { signIns: [], profileIds: [], signOuts: 0 };
+  const profile = Object.hasOwn(options, 'profile')
+    ? options.profile
+    : { login_username: 'carla', rol: 'owner', activo: true };
+  const client = {
+    auth: {
+      signInWithPassword: async (credentials) => {
+        calls.signIns.push(credentials);
+        return signIn(credentials);
+      },
+      signOut: async () => { calls.signOuts += 1; return { error: null }; },
+    },
+    from: () => ({
+      select: () => ({
+        eq: (_column, id) => {
+          calls.profileIds.push(id);
+          return { single: async () => ({ data: profile, error: options.profileError ?? null }) };
+        },
+      }),
+    }),
+  };
   const { default: Login } = load('src/app/(auth)/login/page.tsx', {
     react: { ...require('react'), useEffect() {}, useState: () => { const i = cursor++; return [states[i], (value) => { states[i] = value; }]; } },
     '@/components/layout/brand': () => null,
-    '@/lib/supabase/client': { createClient: () => ({ auth: { signInWithPassword: signIn } }) },
+    '@/lib/supabase/client': { createClient: () => client },
+    '@/lib/usuarios-internos/model': {
+      internalEmail: (username) => `${username}@golgota.internal`,
+      usernameSchema: z.string().trim().toLowerCase().min(3).max(50).regex(/^[a-z0-9._-]+$/),
+    },
     'test-window': { location: { replace: (url) => navigations.push(url) } },
     'next/navigation': { useRouter: () => ({ push() {}, refresh() {} }) },
   }, source);
@@ -39,7 +65,7 @@ function loginHarness(signIn, source) {
     return [node.props?.children].flat().map(findForm).find(Boolean);
   }
   const form = findForm(Login());
-  return { states, navigations, submit: () => form.props.onSubmit({ preventDefault() {} }) };
+  return { states, navigations, calls, submit: () => form.props.onSubmit({ preventDefault() {} }) };
 }
 
 test('reproduce el bloqueo original ante una excepción y comprueba su corrección', async () => {
@@ -66,6 +92,66 @@ test('login espera al SDK antes de navegar a / y libera loading', async () => {
   await pending;
   assert.deepEqual(h.navigations, ['/']);
   assert.equal(h.states[4], false);
+});
+
+test('carla, diego y coach1 autentican directamente con su email tecnico y perfil interno valido', async () => {
+  for (const [username, role] of [['carla', 'owner'], ['diego', 'owner'], ['coach1', 'staff']]) {
+    const h = loginHarness(
+      async () => ({ data: { user: { id: `${username}-id` }, session: {} }, error: null }),
+      undefined,
+      { identity: username.toUpperCase(), profile: { login_username: username, rol: role, activo: true } }
+    );
+    await h.submit();
+    assert.deepEqual(h.calls.signIns, [{ email: `${username}@golgota.internal`, password: 'test-only-password' }]);
+    assert.deepEqual(h.calls.profileIds, [`${username}-id`]);
+    assert.equal(h.calls.signOuts, 0);
+    assert.deepEqual(h.navigations, ['/']);
+  }
+});
+
+test('admin y alumno conservan el login normal por email sin exigir perfil interno', async () => {
+  for (const email of ['admin@example.com', 'alumno@example.com']) {
+    const h = loginHarness(
+      async () => ({ data: { user: { id: 'email-user' }, session: {} }, error: null }),
+      undefined,
+      { identity: email }
+    );
+    await h.submit();
+    assert.deepEqual(h.calls.signIns, [{ email, password: 'test-only-password' }]);
+    assert.deepEqual(h.calls.profileIds, []);
+    assert.deepEqual(h.navigations, ['/']);
+  }
+});
+
+test('usuario interno inactivo o con perfil invalido cierra sesion y recibe error generico', async () => {
+  for (const profile of [
+    { login_username: 'carla', rol: 'owner', activo: false },
+    { login_username: 'carla', rol: 'admin', activo: true },
+    null,
+  ]) {
+    const h = loginHarness(
+      async () => ({ data: { user: { id: 'carla-id' }, session: {} }, error: null }),
+      undefined,
+      { identity: 'carla', profile }
+    );
+    await h.submit();
+    assert.equal(h.calls.signOuts, 1);
+    assert.deepEqual(h.navigations, []);
+    assert.equal(h.states[2], 'Correo, usuario o contraseña incorrectos.');
+  }
+});
+
+test('password incorrecta y username inexistente reciben el mismo mensaje generico', async () => {
+  for (const identity of ['carla', 'noexiste']) {
+    const h = loginHarness(
+      async () => ({ data: { user: null, session: null }, error: { code: 'invalid_credentials' } }),
+      undefined,
+      { identity }
+    );
+    await h.submit();
+    assert.deepEqual(h.navigations, []);
+    assert.equal(h.states[2], 'Correo, usuario o contraseña incorrectos.');
+  }
 });
 
 test('credenciales rechazadas, fallo de red o sesión incompleta liberan loading', async () => {
