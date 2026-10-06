@@ -17,11 +17,11 @@ const macro = read('scripts/cerrar-proyecto-golgota.ps1');
 const finalState = read('docs/ESTADO-FINAL.md');
 
 test('la navegación final coincide con cada rol y oculta placeholders', () => {
-  for (const route of ['/clientes', '/membresias', '/productos', '/pagos-reportados', '/wod', '/comunicados', '/reportes', '/solicitudes-privacidad']) {
+  for (const route of ['/clientes', '/membresias', '/productos', '/inventario', '/gastos', '/pagos-reportados', '/wod', '/comunicados', '/reportes', '/solicitudes-privacidad']) {
     assert.match(navigation, new RegExp(`href: "${route.replaceAll('/', '\\/')}"`));
   }
-  assert.match(navigation, /staffSections = new Set\(\["\/", "\/clientes", "\/membresias", "\/wod", "\/comunicados"\]\)/);
-  assert.doesNotMatch(navigation, /href:\s*"\/(?:asistencia|gastos)"/);
+  assert.match(navigation, /staffSections = new Set\(\["\/", "\/clientes", "\/membresias", "\/inventario", "\/wod", "\/comunicados"\]\)/);
+  assert.doesNotMatch(navigation, /href:\s*"\/asistencia"/);
   assert.match(studentLayout, /href="\/portal"[\s\S]*href="\/privacidad"[\s\S]*<LogoutButton/);
 });
 

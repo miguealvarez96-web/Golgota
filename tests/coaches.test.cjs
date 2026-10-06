@@ -119,10 +119,10 @@ test('búsqueda de alumnos muestra vigencia completa sin datos financieros', () 
 });
 
 test('staff conserva alta de clientes pero rutas financieras siguen bloqueadas', () => {
-  assert.match(expensesPage, /access\.role === "staff"[\s\S]*redirect\("\/"\)/);
+  assert.match(expensesPage, /getExpenseAccess\(\)[\s\S]*if \(!access\) redirect\("\/"\)/);
   assert.match(reportsPage, /getReportAccess\(\)[\s\S]*if \(!access\) redirect\("\/"\)/);
   assert.match(reportsAccess, /!\["admin", "owner"\]\.includes\(profile\.rol\)[\s\S]*return null/);
-  assert.match(navigation, /staffSections = new Set\(\["\/", "\/clientes", "\/membresias", "\/wod", "\/comunicados"\]\)/);
+  assert.match(navigation, /staffSections = new Set\(\["\/", "\/clientes", "\/membresias", "\/inventario", "\/wod", "\/comunicados"\]\)/);
   assert.match(navigation, /role === "staff"[\s\S]*staffSections\.has\(href\)/);
   assert.match(clientManager, /Nuevo cliente/);
   assert.match(clientManager, /\{canEdit && hasPrivateDetails\(client\) && <td className="p-3[\s\S]*?editButton\(client\)/);

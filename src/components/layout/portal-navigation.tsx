@@ -9,6 +9,8 @@ const sections: { title: string; href: string; icon: PortalIconName }[] = [
   { title: "Clientes", href: "/clientes", icon: "clients" },
   { title: "Membresías", href: "/membresias", icon: "membership" },
   { title: "Productos", href: "/productos", icon: "products" },
+  { title: "Inventario", href: "/inventario", icon: "products" },
+  { title: "Gastos", href: "/gastos", icon: "expenses" },
   { title: "Pagos reportados", href: "/pagos-reportados", icon: "payments" },
   { title: "WOD", href: "/wod", icon: "wod" },
   { title: "Comunicados", href: "/comunicados", icon: "announcements" },
@@ -17,7 +19,7 @@ const sections: { title: string; href: string; icon: PortalIconName }[] = [
   { title: "Usuarios", href: "/usuarios", icon: "users" },
 ];
 
-const staffSections = new Set(["/", "/clientes", "/membresias", "/wod", "/comunicados"]);
+const staffSections = new Set(["/", "/clientes", "/membresias", "/inventario", "/wod", "/comunicados"]);
 
 export default function PortalNavigation({ role }: { role: string }) {
   const pathname = usePathname();

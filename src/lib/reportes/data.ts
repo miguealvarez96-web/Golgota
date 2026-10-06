@@ -18,6 +18,7 @@ type PaymentRow = { monto: number; fecha_pago: string };
 type ExpenseRow = { id: string; tipo_gasto: string; descripcion: string; monto: number; fecha_gasto: string };
 type ProductRow = { id: string; nombre: string; stock: number; activo: boolean };
 type SaleRow = { producto_id: string; cantidad: number; valor_total: number; estado: string; fecha_venta: string };
+type InventoryStateRow = { id: string; estado: "BUENO" | "MANTENIMIENTO" | "DANADO" | "BAJA" };
 const batchSize = 500;
 export const lowStockThreshold = 5;
 
@@ -56,6 +57,7 @@ export type ManagementReport = {
     out: number;
     items: Array<{ id: string; name: string; stock: number }>;
   };
+  inventory: { total: number; maintenance: number; damaged: number; retired: number };
   expenseDetails: Array<{ id: string; category: string; description: string; amount: number; date: string }>;
   sales: {
     available: boolean;
@@ -83,12 +85,25 @@ async function loadExpenses(supabase: Database, period: ReportPeriod) {
     const { data, error } = await supabase.from("gastos")
       .select("id,tipo_gasto,descripcion,monto,fecha_gasto")
       .gte("fecha_gasto", period.start).lte("fecha_gasto", period.end)
+      .eq("estado", "ACTIVO")
       .order("fecha_gasto", { ascending: false }).order("id")
       .range(offset, offset + batchSize - 1);
     if (error) throw new Error("No se pudieron cargar los gastos.");
     rows.push(...(data ?? []) as ExpenseRow[]);
     if ((data ?? []).length < batchSize) return rows;
   }
+}
+
+async function loadInventorySummary(supabase: Database) {
+  const { data, error } = await supabase.from("v_inventario_gestion").select("id,estado").limit(10000);
+  if (error || !data) throw new Error("No se pudo cargar el resumen de inventario.");
+  const rows = data as InventoryStateRow[];
+  return {
+    total: rows.length,
+    maintenance: rows.filter((item) => item.estado === "MANTENIMIENTO").length,
+    damaged: rows.filter((item) => item.estado === "DANADO").length,
+    retired: rows.filter((item) => item.estado === "BAJA").length,
+  };
 }
 
 async function loadProducts(supabase: Database) {
@@ -130,13 +145,14 @@ function buildCashflow(payments: PaymentRow[], expenses: ExpenseRow[], period: R
 }
 
 export async function loadManagementReport(supabase: Database, period: ReportPeriod, today: string): Promise<ManagementReport> {
-  const [memberships, payments, expenses, products, salesResult, clientCountResult] = await Promise.all([
+  const [memberships, payments, expenses, products, salesResult, clientCountResult, inventory] = await Promise.all([
     loadFinancialMemberships(supabase),
     loadPayments(supabase, period),
     loadExpenses(supabase, period),
     loadProducts(supabase),
     loadSales(supabase, period),
     supabase.from("clientes").select("id", { count: "exact", head: true }).eq("estado_cliente", "Activo"),
+    loadInventorySummary(supabase),
   ]);
   if (clientCountResult.error || clientCountResult.count === null) {
     throw new Error("No se pudo cargar el total de clientes activos.");
@@ -221,6 +237,7 @@ export async function loadManagementReport(supabase: Database, period: ReportPer
     collections,
     renewals,
     stock: { ...stockTotals, items: stockItems },
+    inventory,
     expenseDetails: expenses.map((expense) => ({
       id: expense.id,
       category: expense.tipo_gasto,

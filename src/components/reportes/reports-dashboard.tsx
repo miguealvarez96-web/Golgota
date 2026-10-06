@@ -100,6 +100,11 @@ export default function ReportsDashboard({ report, periodError }: {
       </article>)}
     </section>
 
+    <section className="panel mt-7 p-5 sm:p-6" aria-labelledby="inventory-summary-title">
+      <div><p className="eyebrow">Activos del box</p><h2 id="inventory-summary-title" className="mt-2 text-lg font-semibold">Resumen de inventario</h2><p className="mt-1 text-sm text-brand-secondary">Cantidades de items por estado; el costo no se mezcla con gastos.</p></div>
+      <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><SmallMetric label="Total items" value={report.inventory.total} /><SmallMetric label="En mantenimiento" value={report.inventory.maintenance} /><SmallMetric label="Dañados" value={report.inventory.damaged} /><SmallMetric label="De baja" value={report.inventory.retired} /></div>
+    </section>
+
     <section className="mt-7 grid gap-5 xl:grid-cols-2" aria-label="Gráficos de gestión">
       <article className="panel min-w-0 p-5 sm:p-6"><h2 className="text-lg font-semibold">Ingresos confirmados vs. gastos</h2>
         <p className="mt-1 text-sm text-brand-secondary">Movimientos registrados en el período, por fecha de negocio Ecuador.</p>
