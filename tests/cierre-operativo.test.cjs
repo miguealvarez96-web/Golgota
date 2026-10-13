@@ -42,7 +42,7 @@ test('reportes usan ingresos confirmados, gastos activos y resumen de inventario
 test('navegación muestra gastos e inventario y staff recibe solo inventario', () => {
   assert.match(navigation, /href: "\/gastos"/);
   assert.match(navigation, /href: "\/inventario"/);
-  assert.match(navigation, /staffSections = new Set\(\["\/", "\/clientes", "\/membresias", "\/inventario", "\/wod", "\/comunicados"\]\)/);
+  assert.match(navigation, /staffSections = new Set\(\["\/", "\/clientes", "\/membresias", "\/inventario", "\/wod", "\/desafios", "\/comunicados"\]\)/);
   const staffSet = navigation.match(/staffSections = new Set\(([^;]+)\)/)[1];
   assert.doesNotMatch(staffSet, /gastos|reportes/);
 });

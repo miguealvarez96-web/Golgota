@@ -28,6 +28,9 @@ export async function saveWod(id: string | null, input: unknown): Promise<CoachC
       horario_grupo: parsed.data.horario_grupo,
       youtube_url: parsed.data.youtube_url,
       notas: parsed.data.notas,
+      benchmark_ref: parsed.data.benchmark_ref,
+      permite_resultados: parsed.data.permite_resultados,
+      limite_tiempo_minutos: parsed.data.limite_tiempo_minutos,
       publicado: parsed.data.publicado,
     };
 

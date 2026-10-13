@@ -2,6 +2,7 @@ import WodManager from "@/components/coaches/wod-manager";
 import { businessDate } from "@/lib/clientes/model";
 import { getCoachAccess } from "@/lib/coaches/access";
 import { canManageWodContent, type WodRow } from "@/lib/coaches/model";
+import { loadCoachSportOverview } from "@/lib/deportivo/data";
 
 export default async function WodPage() {
   const access = await getCoachAccess();
@@ -10,13 +11,14 @@ export default async function WodPage() {
   const today = businessDate();
 
   let request = access.supabase.from("wods")
-    .select("id,fecha,titulo,contenido,horario_grupo,youtube_url,notas,publicado,created_by,created_at,updated_at")
+    .select("id,fecha,titulo,contenido,horario_grupo,youtube_url,notas,benchmark_ref,permite_resultados,limite_tiempo_minutos,publicado,created_by,created_at,updated_at")
     .order("fecha", { ascending: false });
   if (!canManage) request = request.eq("fecha", today).eq("publicado", true);
   const { data, error } = await request.limit(canManage ? 60 : 1);
   if (error || !data) return <LoadError title="WOD" />;
 
-  return <WodManager wods={data as WodRow[]} canManage={canManage} today={today} />;
+  const sportOverview = await loadCoachSportOverview(access);
+  return <WodManager wods={data as WodRow[]} canManage={canManage} today={today} sportOverview={sportOverview} />;
 }
 
 function LoadError({ title }: { title: string }) {

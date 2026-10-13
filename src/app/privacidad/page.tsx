@@ -36,10 +36,13 @@ export default function PrivacyPage() {
             "Ficha de cliente: identificación, nombre, teléfono, correo, fechas y datos operativos registrados por personal autorizado.",
             "Membresías y pagos: plan, vigencia, valor, saldo, pagos confirmados y trazabilidad de reportes de pago.",
             "Operación: productos, asistencia cuando se implemente, WOD, comunicados y acciones administrativas.",
+            "Progreso deportivo voluntario: peso y estatura cuando el alumno decide usar Mi progreso; el IMC orientativo se calcula únicamente para mostrarle su evolución.",
+            "Actividad deportiva: resultados WOD, récords personales y participación o progreso en desafíos.",
             "Seguridad y auditoría: usuario, tabla, acción, identificador, valores anteriores/nuevos y fecha.",
             "Privacidad: versión del aviso reconocida, fecha, contexto, preferencia opcional de comunicaciones y solicitudes del titular.",
           ]} />
           <p className="mt-4 text-sm text-brand-secondary">No deben escribirse contraseñas, tokens, secretos ni datos personales innecesarios en observaciones, WOD, comunicados o solicitudes.</p>
+          <p className="mt-4 rounded-xl border border-brand-border bg-brand-bg p-4"><strong>Privacidad del progreso físico:</strong> el peso, la estatura y el IMC orientativo no se muestran en rankings ni se exponen públicamente. Coach/staff no recibe estos datos. Los resultados WOD, récords deportivos y participación en desafíos se usan únicamente para las funciones deportivas de la plataforma.</p>
         </Section>
 
         <Section title="3. Finalidades y bases de tratamiento">

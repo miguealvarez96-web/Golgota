@@ -47,8 +47,15 @@ export const wodSchema = z.object({
   horario_grupo: optionalText(160, "Máximo 160 caracteres."),
   youtube_url: optionalWebUrl,
   notas: optionalText(3000, "Máximo 3000 caracteres."),
+  benchmark_ref: optionalText(80, "Máximo 80 caracteres."),
+  permite_resultados: z.boolean().optional().default(false),
+  limite_tiempo_minutos: z.number().int().positive("El límite debe ser mayor que cero.").max(1440, "El límite no puede superar 1440 minutos.").nullable().optional().default(null),
   publicado: z.boolean(),
-}).strict();
+}).strict().superRefine((value, context) => {
+  if (!value.permite_resultados && value.limite_tiempo_minutos !== null) {
+    context.addIssue({ code: "custom", path: ["limite_tiempo_minutos"], message: "Activa los resultados antes de indicar un límite." });
+  }
+});
 
 export const announcementSchema = z.object({
   titulo: title,
@@ -67,6 +74,9 @@ export type WodRow = {
   horario_grupo: string | null;
   youtube_url: string | null;
   notas: string | null;
+  benchmark_ref: string | null;
+  permite_resultados: boolean;
+  limite_tiempo_minutos: number | null;
   publicado: boolean;
   created_by: string;
   created_at: string;

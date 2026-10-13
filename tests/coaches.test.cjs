@@ -74,7 +74,7 @@ test('staff gestiona WOD pero no comunicados; alumno no gestiona contenido', asy
   assert.equal(staffWod.writes[0].data.contenido, 'Trabajo');
   const staffEdit = actionHarness('staff', 'src/app/(app)/wod/actions.ts', 'saveWod', 'wods');
   assert.equal((await staffEdit.action(id, { fecha: '2026-10-04', titulo: 'WOD', descripcion: 'Trabajo', horario_grupo: '06:00', youtube_url: 'https://youtu.be/demo', notas: 'Escalar carga', publicado: true })).ok, true);
-  assert.deepEqual(staffEdit.writes[0], { operation: 'update', data: { fecha: '2026-10-04', titulo: 'WOD', contenido: 'Trabajo', horario_grupo: '06:00', youtube_url: 'https://youtu.be/demo', notas: 'Escalar carga', publicado: true } });
+  assert.deepEqual(staffEdit.writes[0], { operation: 'update', data: { fecha: '2026-10-04', titulo: 'WOD', contenido: 'Trabajo', horario_grupo: '06:00', youtube_url: 'https://youtu.be/demo', notas: 'Escalar carga', benchmark_ref: null, permite_resultados: false, limite_tiempo_minutos: null, publicado: true } });
   const staffAnnouncement = actionHarness('staff', 'src/app/(app)/comunicados/actions.ts', 'saveAnnouncement', 'comunicados');
   assert.equal((await staffAnnouncement.action(null, { titulo: 'Aviso', contenido: 'Contenido', publicado: true })).ok, false);
   const studentWod = actionHarness('alumno', 'src/app/(app)/wod/actions.ts', 'saveWod', 'wods');
@@ -122,7 +122,7 @@ test('staff conserva alta de clientes pero rutas financieras siguen bloqueadas',
   assert.match(expensesPage, /getExpenseAccess\(\)[\s\S]*if \(!access\) redirect\("\/"\)/);
   assert.match(reportsPage, /getReportAccess\(\)[\s\S]*if \(!access\) redirect\("\/"\)/);
   assert.match(reportsAccess, /!\["admin", "owner"\]\.includes\(profile\.rol\)[\s\S]*return null/);
-  assert.match(navigation, /staffSections = new Set\(\["\/", "\/clientes", "\/membresias", "\/inventario", "\/wod", "\/comunicados"\]\)/);
+  assert.match(navigation, /staffSections = new Set\(\["\/", "\/clientes", "\/membresias", "\/inventario", "\/wod", "\/desafios", "\/comunicados"\]\)/);
   assert.match(navigation, /role === "staff"[\s\S]*staffSections\.has\(href\)/);
   assert.match(clientManager, /Nuevo cliente/);
   assert.match(clientManager, /\{canEdit && hasPrivateDetails\(client\) && <td className="p-3[\s\S]*?editButton\(client\)/);

@@ -6,10 +6,12 @@ import StudentPrivacyPanel from "./student-privacy-panel";
 import type { StudentPrivacyData } from "@/lib/privacidad/model";
 import PaymentReceiptButton from "./payment-receipt-button";
 import type { WodRow } from "@/lib/coaches/model";
+import type { StudentSportData } from "@/lib/deportivo/model";
+import StudentSportsPanel from "./student-sports-panel";
 
 type StudentWod = Pick<WodRow, "id" | "fecha" | "titulo" | "contenido" | "horario_grupo" | "youtube_url" | "notas" | "publicado">;
 
-export default function StudentDashboard({ data, privacy, wod }: { data: StudentPortal; privacy: StudentPrivacyData; wod: StudentWod | null }) {
+export default function StudentDashboard({ data, privacy, wod, sports, sportsError, today }: { data: StudentPortal; privacy: StudentPrivacyData; wod: StudentWod | null; sports: StudentSportData | null; sportsError: string | null; today: string }) {
   const current = chooseStudentMembership(data.membresias);
   const payableMembership = current && current.estado_pago !== "CANCELADA" && current.saldo > 0 ? current.id : null;
   const firstName = data.cliente.nombre_completo.split(/\s+/)[0];
@@ -60,6 +62,8 @@ export default function StudentDashboard({ data, privacy, wod }: { data: Student
         {wod.youtube_url && <a className="mt-4 inline-flex text-sm font-medium text-brand-copper underline underline-offset-4" href={wod.youtube_url} target="_blank" rel="noreferrer">Ver video del WOD</a>}
       </div> : <p className="mt-5 text-sm text-brand-secondary">Todavía no hay un WOD publicado para hoy.</p>}
     </section>
+
+    {sports ? <StudentSportsPanel data={sports} today={today} /> : <section className="panel mt-7 p-5 sm:p-7"><h2 className="text-lg font-semibold">Actividad deportiva</h2><p role="status" className="mt-3 text-sm text-brand-secondary">{sportsError}</p></section>}
 
     <div className="mt-7 grid gap-7 xl:grid-cols-2">
       <ReportPaymentForm membershipId={payableMembership} />
