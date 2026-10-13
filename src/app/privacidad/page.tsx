@@ -43,13 +43,15 @@ export default function PrivacyPage() {
         </Section>
 
         <Section title="3. Finalidades y bases de tratamiento">
+          <p className="mb-4">Gólgota CrossFit utiliza los datos personales exclusivamente para las actividades propias del box: registrar al alumno, gestionar su membresía y pagos, controlar su asistencia, enviar comunicaciones relacionadas con el servicio, organizar el WOD y realizar las demás operaciones necesarias para prestar sus servicios.</p>
           <div className="overflow-x-auto"><table className="min-w-full text-left text-sm"><thead><tr className="border-b border-brand-border"><th className="p-3">Finalidad</th><th className="p-3">Uso funcional</th><th className="p-3">Base aplicable</th></tr></thead><tbody className="divide-y divide-brand-border">
-            <Purpose purpose="Administrar cuenta y acceso" use="Autenticar, asignar roles y proteger rutas." />
-            <Purpose purpose="Gestionar relación deportiva y comercial" use="Clientes, membresías, pagos y servicios contratados." />
+            <Purpose purpose="Registrar al alumno y administrar su acceso" use="Crear su registro, autenticarlo, asignar su rol y proteger las rutas." />
+            <Purpose purpose="Gestionar los servicios del box" use="Administrar membresías, pagos, asistencia, comunicaciones relacionadas con el servicio, WOD y demás actividades propias de Gólgota CrossFit." />
             <Purpose purpose="Seguridad y trazabilidad" use="RLS, control de acceso, prevención de fraude y auditoría." />
             <Purpose purpose="Atender derechos del titular" use="Recibir, revisar y responder solicitudes sin borrado automático." />
             <Purpose purpose="Comunicaciones promocionales opcionales" use="Solo si el alumno marca una casilla separada y no premarcada." basis="Consentimiento opcional registrado; alcance y canal pendientes de definición." />
           </tbody></table></div>
+          <p className="mt-4">Estos tratamientos se realizan de conformidad con la <strong>Ley Orgánica de Protección de Datos Personales (LOPDP), su Reglamento y demás normativa aplicable.</strong></p>
           <p className="mt-4 rounded-xl border border-brand-copper/40 bg-brand-copper/10 p-4 text-sm"><strong>Importante:</strong> reconocer este aviso no constituye consentimiento indiscriminado para todos los tratamientos. La base exacta de cada finalidad debe definirse y documentarse con revisión jurídica.</p>
         </Section>
 

@@ -45,6 +45,14 @@ test('el aviso público es versionado, provisional y no declara cumplimiento tot
   assert.match(notice, /spdp\.gob\.ec/);
 });
 
+test('el aviso explica las actividades propias del box y la normativa aplicable', () => {
+  for (const activity of ['registrar al alumno', 'membresía', 'pagos', 'asistencia', 'comunicaciones relacionadas con el servicio', 'WOD', 'actividades propias de Gólgota CrossFit']) {
+    assert.match(notice, new RegExp(activity, 'i'));
+  }
+  assert.match(notice, /Ley Orgánica de Protección de Datos Personales \(LOPDP\), su Reglamento y demás normativa aplicable/);
+  assert.doesNotMatch(notice, /cumplimiento (?:certificado|legal total garantizado)|aprobaci[oó]n de (?:una )?autoridad/i);
+});
+
 test('la aceptación exige lectura y mantiene promociones opcionales sin premarcar', () => {
   const valid = { aviso_version: model.PRIVACY_NOTICE_VERSION, aviso_leido: true, comunicaciones_promocionales: false };
   assert.equal(model.acceptPrivacySchema.safeParse(valid).success, true);

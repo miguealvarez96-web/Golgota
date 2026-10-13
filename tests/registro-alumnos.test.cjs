@@ -129,9 +129,18 @@ test('privacidad obligatoria se registra y promociones siguen opcionales sin pre
   assert.match(migration, /aviso_version[\s\S]*accepted_at[\s\S]*REGISTRO_PUBLICO/);
   assert.match(migration, /AVISO_PRIVACIDAD_LEIDO/);
   assert.match(migration, /COMUNICACIONES_PROMOCIONALES/);
+  const required = form.match(/name="aviso_leido"[\s\S]*?<\/label>/)[0];
   const optional = form.match(/name="comunicaciones_promocionales"[\s\S]*?<\/label>/)[0];
+  assert.match(required, /type="checkbox"/);
+  assert.match(required, /required/);
+  assert.doesNotMatch(required, /defaultChecked|checked=/);
+  assert.match(required, /Gólgota CrossFit/);
+  assert.match(required, /Ley Orgánica de Protección de Datos Personales \(LOPDP\)/);
+  assert.match(required, /href="\/privacidad"[\s\S]*Política de Privacidad/);
   assert.doesNotMatch(optional, /defaultChecked|checked=/);
-  assert.match(form, /name="aviso_leido"[\s\S]*required/);
+  assert.match(optional, /opcional/);
+  assert.match(form, /Mis datos no serán utilizados para finalidades incompatibles/);
+  assert.equal(model.studentRegistrationSchema.safeParse({ ...valid, aviso_leido: false }).success, false);
 });
 
 test('fallos parciales no crean cliente suelto y el intento conserva coherencia', () => {
