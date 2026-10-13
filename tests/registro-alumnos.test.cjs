@@ -138,9 +138,13 @@ test('privacidad obligatoria se registra y promociones siguen opcionales sin pre
   assert.match(required, /Ley Orgánica de Protección de Datos Personales \(LOPDP\)/);
   assert.match(required, /href="\/privacidad"[\s\S]*Política de Privacidad/);
   assert.doesNotMatch(optional, /defaultChecked|checked=/);
-  assert.match(optional, /opcional/);
+  assert.doesNotMatch(optional, /required/);
+  assert.match(optional, /Autorizo de forma voluntaria a Gólgota CrossFit/);
+  assert.match(optional, /correo electrónico, mensajes SMS y WhatsApp/);
+  assert.match(optional, /autorización es opcional y que puedo retirarla posteriormente/);
   assert.match(form, /Mis datos no serán utilizados para finalidades incompatibles/);
   assert.equal(model.studentRegistrationSchema.safeParse({ ...valid, aviso_leido: false }).success, false);
+  assert.equal(model.studentRegistrationSchema.safeParse({ ...valid, comunicaciones_promocionales: false }).success, true);
 });
 
 test('fallos parciales no crean cliente suelto y el intento conserva coherencia', () => {
