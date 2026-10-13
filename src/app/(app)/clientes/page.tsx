@@ -7,7 +7,9 @@ export default async function ClientesPage({ searchParams }: {
   searchParams: { q?: string; estado?: string; pagina?: string };
 }) {
   const query = typeof searchParams.q === "string" ? searchParams.q.trim().slice(0, 100) : "";
-  const state = clientStates.find((value) => value === searchParams.estado) ?? "";
+  const state = searchParams.estado === "TODOS"
+    ? "TODOS"
+    : clientStates.find((value) => value === searchParams.estado) ?? "Activo";
   const requestedPage = Number(searchParams.pagina);
   const page = Number.isSafeInteger(requestedPage) && requestedPage > 0 ? Math.min(requestedPage, 1000000) : 1;
   const pageSize = 20;
@@ -16,7 +18,7 @@ export default async function ClientesPage({ searchParams }: {
     const access = await getClientAccess();
     if (!access) return <ClientLoadError message="Tu sesión no permite consultar clientes. Vuelve a iniciar sesión." />;
     const staff = access.role === "staff";
-    const { data, count, error } = await loadClients(access.supabase, staff, query, state, page, pageSize);
+    const { data, count, error } = await loadClients(access.supabase, staff, query, state === "TODOS" ? "" : state, page, pageSize);
     if (error || !data || count === null) return <ClientLoadError message="No fue posible cargar los clientes. Inténtalo de nuevo." />;
 
     const memberships: Record<string, MembershipSummary> = {};
@@ -45,7 +47,7 @@ export default async function ClientesPage({ searchParams }: {
       }
     }
     return <ClientsManager clients={data as ClientListRow[]} total={count} page={page} pageSize={pageSize}
-      query={query} state={state} canEdit={canEdit} memberships={memberships} membershipError={membershipError} />;
+      query={query} state={state} canEdit={canEdit} canDelete={canEdit} memberships={memberships} membershipError={membershipError} />;
   } catch {
     return <ClientLoadError message="No fue posible conectar con el listado de clientes. Inténtalo de nuevo." />;
   }

@@ -66,6 +66,9 @@ export type MembershipSummary = {
 export type SaveClientResult = { ok: true; message: string } | {
   ok: false; message: string; errors?: Partial<Record<keyof ClientInput, string[]>>;
 };
+export type DeleteClientResult = { ok: true; message: string; mode: "LOGICA" | "FISICA" } | {
+  ok: false; message: string;
+};
 
 // PostgREST: entrecomillar el valor completo evita que comas/paréntesis alteren
 // el filtro OR. Escapar comodines para buscar literalmente lo que se escribió.

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getClientAccess } from "@/lib/clientes/access";
-import { canManageClients, clientSchema, type SaveClientResult } from "@/lib/clientes/model";
+import { canManageClients, clientSchema, type DeleteClientResult, type SaveClientResult } from "@/lib/clientes/model";
 
 export async function saveClient(id: string | null, input: unknown): Promise<SaveClientResult> {
   try {
@@ -39,5 +39,24 @@ export async function saveClient(id: string | null, input: unknown): Promise<Sav
     return { ok: true, message: id ? "Cliente actualizado correctamente." : "Cliente creado correctamente." };
   } catch {
     return { ok: false, message: "No fue posible completar la operación. Comprueba tu conexión e inténtalo de nuevo." };
+  }
+}
+
+export async function deleteClient(id: string): Promise<DeleteClientResult> {
+  try {
+    if (!z.string().uuid().safeParse(id).success) return { ok: false, message: "El cliente indicado no es válido." };
+    const access = await getClientAccess();
+    if (!access || !canManageClients(access.role)) return { ok: false, message: "No tienes permiso para eliminar clientes." };
+    const { data, error } = await access.supabase.rpc("eliminar_cliente_seguro", { p_cliente_id: id });
+    if (error || !data || typeof data !== "object") return { ok: false, message: "No fue posible eliminar el cliente de forma segura." };
+    const mode = (data as { modo?: unknown }).modo;
+    if (mode !== "LOGICA" && mode !== "FISICA") return { ok: false, message: "No se confirmó el tipo de eliminación realizada." };
+    revalidatePath("/clientes");
+    revalidatePath("/");
+    return mode === "LOGICA"
+      ? { ok: true, mode, message: "Cliente eliminado de la operación. Su historial se conserva por seguridad y trazabilidad." }
+      : { ok: true, mode, message: "Cliente creado por error eliminado definitivamente. La operación quedó auditada." };
+  } catch {
+    return { ok: false, message: "No fue posible completar la eliminación. Comprueba tu conexión e inténtalo de nuevo." };
   }
 }

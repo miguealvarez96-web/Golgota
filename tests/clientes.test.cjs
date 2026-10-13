@@ -23,6 +23,12 @@ function load(relative, mocks = {}) {
 
 const model = load('src/lib/clientes/model.ts');
 const grouping = load('src/lib/membresias/grouping.ts');
+const clientsUi = fs.readFileSync(path.join(__dirname, '..', 'src/components/clientes/clients-manager.tsx'), 'utf8');
+const deletionMigration = fs.readFileSync(path.join(__dirname, '..', 'supabase/migrations/20261013_eliminacion_segura_clientes.sql'), 'utf8');
+const deletionPreflight = fs.readFileSync(path.join(__dirname, '..', 'supabase/preflight/20261013_preflight_eliminacion_segura_clientes.sql'), 'utf8');
+const deletionPostflight = fs.readFileSync(path.join(__dirname, '..', 'supabase/postflight/20261013_postflight_eliminacion_segura_clientes.sql'), 'utf8');
+const deletionRollback = fs.readFileSync(path.join(__dirname, '..', 'supabase/rollback/20261013_rollback_eliminacion_segura_clientes.sql'), 'utf8');
+const deletionDryRun = fs.readFileSync(path.join(__dirname, '..', 'scripts/dry-run-eliminacion-segura-clientes.ps1'), 'utf8');
 const valid = { nombre_completo: 'Cliente de prueba', cedula: '0012345678', celular: '', email: '', estado_cliente: 'Activo', fecha_registro: '2026-01-01' };
 const id = 'b98e5f70-849c-4df8-906a-2b20654fdb39';
 
@@ -42,6 +48,21 @@ function actionHarness({ role = 'admin', duplicate = null, writeError = null, de
     'next/cache': { revalidatePath(route) { refreshed.push(route); } },
   });
   return { saveClient, writes, refreshed };
+}
+
+function deleteHarness({ role = 'admin', mode = 'LOGICA', rpcError = null, denied = false } = {}) {
+  const calls = [], refreshed = [];
+  const access = denied ? null : {
+    role,
+    userId: id,
+    supabase: { async rpc(name, args) { calls.push({ name, args }); return { data: rpcError ? null : { modo: mode }, error: rpcError }; } },
+  };
+  const { deleteClient } = load('src/app/(app)/clientes/actions.ts', {
+    '@/lib/clientes/model': model,
+    '@/lib/clientes/access': { async getClientAccess() { return access; } },
+    'next/cache': { revalidatePath(route) { refreshed.push(route); } },
+  });
+  return { deleteClient, calls, refreshed };
 }
 
 test('valida, normaliza y conserva ceros iniciales de identificación', () => {
@@ -135,6 +156,63 @@ test('admin y owner pueden editar e inactivar sin borrar historial', async () =>
   }
 });
 
+test('admin y owner pueden invocar la eliminación segura y refrescan los listados', async () => {
+  for (const role of ['admin', 'owner']) {
+    const h = deleteHarness({ role, mode: role === 'admin' ? 'LOGICA' : 'FISICA' });
+    const result = await h.deleteClient(id);
+    assert.equal(result.ok, true);
+    assert.equal(h.calls[0].name, 'eliminar_cliente_seguro');
+    assert.deepEqual(h.calls[0].args, { p_cliente_id: id });
+    assert.deepEqual(h.refreshed, ['/clientes', '/']);
+  }
+});
+
+test('staff, alumno y sesiones inválidas no pueden invocar la RPC de eliminación', async () => {
+  for (const options of [{ role: 'staff' }, { role: 'alumno' }, { denied: true }]) {
+    const h = deleteHarness(options);
+    const result = await h.deleteClient(id);
+    assert.equal(result.ok, false);
+    assert.equal(h.calls.length, 0);
+    assert.equal(h.refreshed.length, 0);
+  }
+});
+
+test('la interfaz exige confirmación con nombre y muestra la acción peligrosa solo con permiso', () => {
+  assert.match(clientsUi, /canDelete && deleteButton\(client\)/);
+  assert.match(clientsUi, /window\.confirm\(`¿Está seguro de eliminar a \$\{client\.nombre_completo\}\?`\)/);
+  assert.match(clientsUi, /type="button"[\s\S]*text-red-700[\s\S]*>Eliminar cliente<\/button>/);
+  assert.match(clientsUi, /router\.refresh\(\)/);
+});
+
+test('la RPC limita roles y decide baja lógica ante cualquier historial', () => {
+  assert.match(deletionMigration, /u\.activo[\s\S]*u\.rol IN \('admin', 'owner'\)/);
+  assert.match(deletionMigration, /FROM pg_constraint[\s\S]*fk\.confrelid = 'public\.clientes'::regclass/);
+  assert.match(deletionMigration, /v_cliente\.auth_user_id IS NOT NULL[\s\S]*v_tiene_historial := true/);
+  assert.match(deletionMigration, /FROM public\.auditoria_logs[\s\S]*registro_id = p_cliente_id::text/);
+  assert.match(deletionMigration, /IF v_tiene_historial THEN[\s\S]*SET estado_cliente = 'Inactivo'/);
+  assert.match(deletionMigration, /UPDATE public\.usuarios[\s\S]*SET activo = false/);
+  assert.match(deletionMigration, /'BAJA_LOGICA'/);
+});
+
+test('DELETE físico queda detrás de todas las comprobaciones y conserva auditoría', () => {
+  const historyBranch = deletionMigration.indexOf('IF v_tiene_historial THEN');
+  const physicalDelete = deletionMigration.indexOf('DELETE FROM public.clientes');
+  assert.ok(historyBranch > 0 && physicalDelete > historyBranch);
+  assert.match(deletionMigration, /Este camino solo se alcanza sin cuenta, FK, historial ni auditoría previa/);
+  assert.match(deletionMigration, /'BORRADO_FISICO'[\s\S]*DELETE FROM public\.clientes/);
+  assert.doesNotMatch(deletionMigration, /DELETE FROM public\.(?:membresias|pagos|resultados_wod|records_personales|progreso_fisico)/);
+  assert.match(deletionMigration, /REVOKE ALL ON FUNCTION[\s\S]*GRANT EXECUTE[\s\S]*TO authenticated/);
+});
+
+test('el SQL preparado tiene preflight, postflight y dry-run reversible sin ejecución automática', () => {
+  assert.match(deletionPreflight, /BEGIN TRANSACTION READ ONLY/);
+  assert.match(deletionPreflight, /has_table_privilege\('authenticated', 'public\.clientes', 'DELETE'\)/);
+  assert.match(deletionPostflight, /BEGIN TRANSACTION READ ONLY/);
+  assert.match(deletionPostflight, /has_function_privilege/);
+  assert.match(deletionRollback, /^\s*(?:--[^\r\n]*(?:\r?\n|$))*ROLLBACK;\s*$/);
+  assert.match(deletionDryRun, /BEGIN;[\s\S]*\$migrationBody[\s\S]*\$postflightBody[\s\S]*\$rollback/);
+});
+
 test('sesión inválida y campos adicionales impiden toda escritura', async () => {
   const h = actionHarness({ denied: true });
   assert.equal((await h.saveClient(null, valid)).ok, false);
@@ -186,7 +264,7 @@ test('acceso rechaza perfiles inactivos y roles ajenos a la operación', async (
 test('la página de staff consulta vigencia operativa sin entregar finanzas', async () => {
   const tables = [];
   let clientSelection = '';
-  const clientsQuery = { select(fields) { clientSelection = fields; return this; }, order() { return this; }, range() { return this; },
+  const clientsQuery = { select(fields) { clientSelection = fields; return this; }, order() { return this; }, range() { return this; }, eq() { return this; },
     then(resolve) { return Promise.resolve({ data: [{ id, nombre_completo: valid.nombre_completo, estado_cliente: valid.estado_cliente }], count: 1, error: null }).then(resolve); } };
   const membershipQuery = { select() { return this; }, in() { return this; }, order() { return this; },
     then(resolve) { return Promise.resolve({ data: [{ membresia_id: id, cliente_id: id, plan: 'MENSUAL', fecha_inicio: '2026-10-01', fecha_fin: '2026-10-30', estado_vigencia: 'POR_VENCER' }], count: 1, error: null }).then(resolve); } };
@@ -200,6 +278,8 @@ test('la página de staff consulta vigencia operativa sin entregar finanzas', as
   assert.deepEqual(tables, ['clientes', 'v_membresias_verificacion']);
   assert.equal(clientSelection, 'id,nombre_completo,estado_cliente');
   assert.equal(element.props.canEdit, false);
+  assert.equal(element.props.canDelete, false);
+  assert.equal(element.props.state, 'Activo');
   for (const field of ['cedula', 'celular', 'email']) assert.equal(Object.hasOwn(element.props.clients[0], field), false);
   assert.equal(element.props.memberships[id].plan, 'MENSUAL');
   assert.equal(element.props.memberships[id].fecha_inicio, '2026-10-01');
