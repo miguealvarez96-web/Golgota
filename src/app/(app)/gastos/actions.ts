@@ -40,13 +40,11 @@ export async function voidExpense(id: string): Promise<ExpenseResult> {
     const access = await getExpenseAccess();
     if (!access || !canManageExpenses(access.role)) return { ok: false, message: "No tienes permiso para anular gastos." };
     if (!idSchema.safeParse(id).success) return { ok: false, message: "El gasto indicado no es válido." };
-    const { data, error } = await access.supabase.from("gastos")
-      .update({ estado: "ANULADO", anulado_por: access.userId, anulado_at: new Date().toISOString() })
-      .eq("id", id).eq("estado", "ACTIVO").select("id").single();
-    if (error || !data) return { ok: false, message: "No fue posible anular el gasto o ya estaba anulado." };
+    const { error } = await access.supabase.rpc("anular_gasto_seguro", { p_gasto_id: id });
+    if (error) return { ok: false, message: "No fue posible anular el gasto o ya estaba anulado." };
     revalidatePath("/gastos");
     revalidatePath("/reportes");
-    return { ok: true, id: data.id, message: "Gasto anulado; el historial se conserva." };
+    return { ok: true, id, message: "Gasto anulado; el historial se conserva." };
   } catch {
     return { ok: false, message: "No fue posible anular el gasto." };
   }

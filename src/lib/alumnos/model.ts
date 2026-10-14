@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { businessDate } from "@/lib/clientes/model";
 
-export const reportStates = ["PENDIENTE", "APROBADO", "RECHAZADO"] as const;
+export const reportStates = ["PENDIENTE", "APROBADO", "RECHAZADO", "CANCELADO"] as const;
 export type ReportState = (typeof reportStates)[number];
 
 export const paymentReceiptMaxBytes = 5 * 1024 * 1024;

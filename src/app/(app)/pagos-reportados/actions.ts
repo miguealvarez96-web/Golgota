@@ -71,6 +71,26 @@ export async function retryPaymentReceiptCleanup(reportId: string): Promise<Acti
   }
 }
 
+export async function cancelPendingPaymentReport(reportId: string): Promise<ActionResult> {
+  try {
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(reportId)) {
+      return { ok: false, message: "El reporte no es válido." };
+    }
+    const access = await getClientAccess();
+    if (!access || !canManageClients(access.role)) return { ok: false, message: "No tienes permiso para cancelar reportes." };
+    const { error } = await access.supabase.rpc("cancelar_reporte_pago_pendiente", { p_reporte_id: reportId });
+    if (error) return { ok: false, message: "Solo puede cancelarse un reporte pendiente creado por error." };
+    let cleanupOk = false;
+    try { cleanupOk = await cleanupResolvedPaymentReceipt(access, reportId); } catch { cleanupOk = false; }
+    revalidatePath("/pagos-reportados"); revalidatePath("/portal");
+    return { ok: true, message: cleanupOk
+      ? "Reporte cancelado; la trazabilidad se conserva y el comprobante fue limpiado."
+      : "Reporte cancelado; la trazabilidad se conserva y la limpieza del comprobante quedó pendiente." };
+  } catch {
+    return { ok: false, message: "No fue posible cancelar el reporte." };
+  }
+}
+
 async function cleanupResolvedPaymentReceipt(
   access: NonNullable<Awaited<ReturnType<typeof getClientAccess>>>,
   reportId: string,

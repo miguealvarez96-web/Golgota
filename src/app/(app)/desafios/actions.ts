@@ -37,3 +37,15 @@ export async function updateCoachChallengeProgress(input: unknown): Promise<Spor
   revalidatePath("/desafios"); revalidatePath("/portal");
   return { ok: true, message: "Progreso validado." };
 }
+
+export async function manageChallengeLifecycle(id: string, action: "ELIMINAR" | "RESTAURAR"): Promise<SportActionResult> {
+  const access = await getCoachAccess();
+  if (!access || !["admin", "owner"].includes(access.role)) return { ok: false, message: "No tienes permiso para retirar desafíos." };
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return { ok: false, message: "El desafío indicado no es válido." };
+  const { data, error } = await access.supabase.rpc("gestionar_desafio_seguro", { p_desafio_id: id, p_accion: action });
+  if (error || !data || typeof data !== "object") return { ok: false, message: "No fue posible completar el ciclo de vida del desafío." };
+  const mode = (data as { modo?: string }).modo;
+  revalidatePath("/desafios"); revalidatePath("/portal");
+  return { ok: true, message: action === "RESTAURAR" ? "Desafío restaurado como borrador."
+    : mode === "FISICA" ? "El desafío fue eliminado definitivamente." : "El desafío fue archivado y el progreso se conserva." };
+}

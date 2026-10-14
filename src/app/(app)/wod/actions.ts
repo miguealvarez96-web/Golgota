@@ -51,3 +51,17 @@ export async function saveWod(id: string | null, input: unknown): Promise<CoachC
     return { ok: false, message: "No fue posible completar la operación." };
   }
 }
+
+export async function manageWodLifecycle(id: string, action: "ELIMINAR" | "RESTAURAR"): Promise<CoachContentResult> {
+  try {
+    const access = await getCoachAccess();
+    if (!access || !["admin", "owner"].includes(access.role)) return { ok: false, message: "No tienes permiso para retirar WOD." };
+    if (!idSchema.safeParse(id).success) return { ok: false, message: "El WOD indicado no es válido." };
+    const { data, error } = await access.supabase.rpc("gestionar_wod_seguro", { p_wod_id: id, p_accion: action });
+    if (error || !data || typeof data !== "object") return { ok: false, message: "No fue posible completar el ciclo de vida del WOD." };
+    const mode = (data as { modo?: string }).modo;
+    revalidatePath("/wod"); revalidatePath("/portal"); revalidatePath("/");
+    return { ok: true, id, message: action === "RESTAURAR" ? "WOD restaurado como borrador."
+      : mode === "FISICA" ? "El WOD fue eliminado definitivamente." : "El WOD fue archivado y sus resultados se conservan." };
+  } catch { return { ok: false, message: "No fue posible completar el ciclo de vida del WOD." }; }
+}

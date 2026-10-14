@@ -3,16 +3,18 @@
 import { useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
-import { saveWod } from "@/app/(app)/wod/actions";
+import { manageWodLifecycle, saveWod } from "@/app/(app)/wod/actions";
 import PortalIcon from "@/components/layout/portal-icon";
 import { displayDate } from "@/lib/clientes/model";
 import type { WodRow } from "@/lib/coaches/model";
 import type { CoachSportRecord, CoachSportResult } from "@/lib/deportivo/data";
 import { exerciseLabels, formatWodTime } from "@/lib/deportivo/model";
 
-export default function WodManager({ wods, canManage, today, sportOverview }: {
+export default function WodManager({ wods, canManage, canLifecycle, filter, today, sportOverview }: {
   wods: WodRow[];
   canManage: boolean;
+  canLifecycle: boolean;
+  filter: string;
   today: string;
   sportOverview: { resultados: CoachSportResult[]; records: CoachSportRecord[] };
 }) {
@@ -50,6 +52,16 @@ export default function WodManager({ wods, canManage, today, sportOverview }: {
       }
     });
   }
+  function lifecycle(wod: WodRow) {
+    const action = wod.archivado ? "RESTAURAR" : "ELIMINAR";
+    const prompt = wod.archivado ? `¿Restaurar ${wod.titulo}?` : "¿Está seguro de eliminar este registro? Si existen resultados o historial, el WOD será archivado.";
+    if (!window.confirm(prompt)) return;
+    setError(""); setNotice("");
+    startTransition(async () => {
+      const result = await manageWodLifecycle(wod.id, action);
+      if (result.ok) { setNotice(result.message); router.refresh(); } else setError(result.message);
+    });
+  }
 
   return <main className="portal-page">
     <div className="flex flex-wrap items-center justify-between gap-4">
@@ -65,6 +77,7 @@ export default function WodManager({ wods, canManage, today, sportOverview }: {
 
     {notice && <p role="status" className="mt-5 rounded-xl border border-brand-copper/40 bg-brand-copper/10 p-4 text-sm">{notice}</p>}
     {error && <p role="alert" className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</p>}
+    {canLifecycle && <form action="/wod" className="panel mt-5 flex flex-wrap items-end gap-3 p-4"><div><label htmlFor="wod-filter" className="field-label">Estado</label><select id="wod-filter" name="filtro" className="field" defaultValue={filter}><option value="publicados">Publicados</option><option value="archivados">Archivados</option><option value="todos">Todos</option></select></div><button className="btn-secondary">Filtrar</button></form>}
 
     {editing !== undefined && <form key={editing?.id ?? "new"} onSubmit={submit} className="panel mt-7 grid gap-5 p-5 sm:p-6">
       <div className="grid gap-5 sm:grid-cols-[12rem_minmax(0,1fr)]">
@@ -89,13 +102,13 @@ export default function WodManager({ wods, canManage, today, sportOverview }: {
     <div className="mt-7 grid gap-5">
       {!wods.length ? <div className="panel p-10 text-center"><h2 className="font-semibold">{canManage ? "No hay WOD registrados" : "Todavía no hay WOD publicado para hoy"}</h2><p className="mt-2 text-sm text-brand-secondary">{canManage ? "Crea la primera programación del día." : "Vuelve a consultar más tarde."}</p></div>
         : wods.map((wod) => <article key={wod.id} className="panel p-5 sm:p-6">
-          <div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-sm font-medium text-brand-copper">{displayDate(wod.fecha)}</p><h2 className="mt-1 text-xl font-semibold">{wod.titulo}</h2></div>{canManage && <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${wod.publicado ? "border-brand-copper/50 bg-brand-copper/10" : "border-brand-border text-brand-secondary"}`}>{wod.publicado ? "PUBLICADO" : "BORRADOR"}</span>}</div>
+          <div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-sm font-medium text-brand-copper">{displayDate(wod.fecha)}</p><h2 className="mt-1 text-xl font-semibold">{wod.titulo}</h2></div>{canManage && <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${wod.publicado && !wod.archivado ? "border-brand-copper/50 bg-brand-copper/10" : "border-brand-border text-brand-secondary"}`}>{wod.archivado ? "ARCHIVADO" : wod.publicado ? "PUBLICADO" : "BORRADOR"}</span>}</div>
           {wod.horario_grupo && <p className="mt-3 text-sm font-medium text-brand-text">{wod.horario_grupo}</p>}
           <p className="mt-5 whitespace-pre-wrap border-t border-brand-border pt-5 text-sm leading-7 text-brand-secondary">{wod.contenido}</p>
           {wod.notas && <p className="mt-4 whitespace-pre-wrap rounded-xl bg-brand-bg p-4 text-sm text-brand-secondary"><span className="font-medium text-brand-text">Notas:</span> {wod.notas}</p>}
           {wod.youtube_url && <a className="mt-4 inline-flex text-sm font-medium text-brand-copper underline underline-offset-4" href={wod.youtube_url} target="_blank" rel="noreferrer">Ver video del WOD</a>}
           {wod.permite_resultados && <p className="mt-4 text-sm font-medium text-brand-copper">Competitivo por tiempo{wod.limite_tiempo_minutos ? ` · Límite ${wod.limite_tiempo_minutos} min` : ""}{wod.benchmark_ref ? ` · ${wod.benchmark_ref}` : ""}</p>}
-          {canManage && <div className="mt-5 border-t border-brand-border pt-4"><button type="button" className="btn-secondary" onClick={() => { setEditing(wod); setError(""); }}>Editar</button></div>}
+          {canManage && <div className="mt-5 flex flex-wrap gap-2 border-t border-brand-border pt-4"><button type="button" className="btn-secondary" disabled={wod.archivado} onClick={() => { setEditing(wod); setError(""); }}>Editar</button>{canLifecycle && <button type="button" className={wod.archivado ? "btn-secondary" : "btn-secondary text-red-700"} disabled={pending} onClick={() => lifecycle(wod)}>{wod.archivado ? "Restaurar" : "Eliminar / Archivar"}</button>}</div>}
         </article>)}
     </div>
 

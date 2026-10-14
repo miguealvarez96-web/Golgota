@@ -36,3 +36,17 @@ export async function saveAnnouncement(id: string | null, input: unknown): Promi
     return { ok: false, message: "No fue posible completar la operación." };
   }
 }
+
+export async function manageAnnouncementLifecycle(id: string, action: "ELIMINAR" | "RESTAURAR"): Promise<CoachContentResult> {
+  try {
+    const access = await getCoachAccess();
+    if (!access || !["admin", "owner"].includes(access.role)) return { ok: false, message: "No tienes permiso para retirar comunicados." };
+    if (!idSchema.safeParse(id).success) return { ok: false, message: "El comunicado indicado no es válido." };
+    const { data, error } = await access.supabase.rpc("gestionar_comunicado_seguro", { p_comunicado_id: id, p_accion: action });
+    if (error || !data || typeof data !== "object") return { ok: false, message: "No fue posible completar el ciclo de vida del comunicado." };
+    const mode = (data as { modo?: string }).modo;
+    revalidatePath("/comunicados"); revalidatePath("/");
+    return { ok: true, id, message: action === "RESTAURAR" ? "Comunicado restaurado como borrador."
+      : mode === "FISICA" ? "El comunicado fue eliminado definitivamente." : "El comunicado fue archivado y dejó de mostrarse al alumno." };
+  } catch { return { ok: false, message: "No fue posible completar el ciclo de vida del comunicado." }; }
+}

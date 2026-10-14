@@ -24,11 +24,11 @@ function load(relative, mocks = {}) {
 const model = load('src/lib/clientes/model.ts');
 const grouping = load('src/lib/membresias/grouping.ts');
 const clientsUi = fs.readFileSync(path.join(__dirname, '..', 'src/components/clientes/clients-manager.tsx'), 'utf8');
-const deletionMigration = fs.readFileSync(path.join(__dirname, '..', 'supabase/migrations/20261013_eliminacion_segura_clientes.sql'), 'utf8');
-const deletionPreflight = fs.readFileSync(path.join(__dirname, '..', 'supabase/preflight/20261013_preflight_eliminacion_segura_clientes.sql'), 'utf8');
-const deletionPostflight = fs.readFileSync(path.join(__dirname, '..', 'supabase/postflight/20261013_postflight_eliminacion_segura_clientes.sql'), 'utf8');
-const deletionRollback = fs.readFileSync(path.join(__dirname, '..', 'supabase/rollback/20261013_rollback_eliminacion_segura_clientes.sql'), 'utf8');
-const deletionDryRun = fs.readFileSync(path.join(__dirname, '..', 'scripts/dry-run-eliminacion-segura-clientes.ps1'), 'utf8');
+const deletionMigration = fs.readFileSync(path.join(__dirname, '..', 'supabase/migrations/20261013_gestion_administrativa_segura.sql'), 'utf8');
+const deletionPreflight = fs.readFileSync(path.join(__dirname, '..', 'supabase/preflight/20261013_gestion_administrativa_segura.sql'), 'utf8');
+const deletionPostflight = fs.readFileSync(path.join(__dirname, '..', 'supabase/postflight/20261013_gestion_administrativa_segura.sql'), 'utf8');
+const deletionRollback = fs.readFileSync(path.join(__dirname, '..', 'supabase/rollback/20261013_gestion_administrativa_segura.sql'), 'utf8');
+const deletionDryRun = fs.readFileSync(path.join(__dirname, '..', 'scripts/dry-run-gestion-administrativa-segura.ps1'), 'utf8');
 const valid = { nombre_completo: 'Cliente de prueba', cedula: '0012345678', celular: '', email: '', estado_cliente: 'Activo', fecha_registro: '2026-01-01' };
 const id = 'b98e5f70-849c-4df8-906a-2b20654fdb39';
 
@@ -178,7 +178,7 @@ test('staff, alumno y sesiones inválidas no pueden invocar la RPC de eliminaci�
 });
 
 test('la interfaz exige confirmación con nombre y muestra la acción peligrosa solo con permiso', () => {
-  assert.match(clientsUi, /canDelete && deleteButton\(client\)/);
+  assert.match(clientsUi, /canDelete && lifecycleButton\(client\)/);
   assert.match(clientsUi, /window\.confirm\(`¿Está seguro de eliminar a \$\{client\.nombre_completo\}\?`\)/);
   assert.match(clientsUi, /type="button"[\s\S]*text-red-700[\s\S]*>Eliminar cliente<\/button>/);
   assert.match(clientsUi, /router\.refresh\(\)/);
@@ -186,29 +186,33 @@ test('la interfaz exige confirmación con nombre y muestra la acción peligrosa 
 
 test('la RPC limita roles y decide baja lógica ante cualquier historial', () => {
   assert.match(deletionMigration, /u\.activo[\s\S]*u\.rol IN \('admin', 'owner'\)/);
-  assert.match(deletionMigration, /FROM pg_constraint[\s\S]*fk\.confrelid = 'public\.clientes'::regclass/);
-  assert.match(deletionMigration, /v_cliente\.auth_user_id IS NOT NULL[\s\S]*v_tiene_historial := true/);
-  assert.match(deletionMigration, /FROM public\.auditoria_logs[\s\S]*registro_id = p_cliente_id::text/);
-  assert.match(deletionMigration, /IF v_tiene_historial THEN[\s\S]*SET estado_cliente = 'Inactivo'/);
-  assert.match(deletionMigration, /UPDATE public\.usuarios[\s\S]*SET activo = false/);
-  assert.match(deletionMigration, /'BAJA_LOGICA'/);
+  assert.match(deletionMigration, /FROM pg_constraint[\s\S]*fk\.confrelid = p_tabla/);
+  assert.match(deletionMigration, /tiene_dependencias_historicas\('public\.clientes',p_cliente_id,'clientes'\)/);
+  assert.match(deletionMigration, /v_historial := v_cliente\.auth_user_id IS NOT NULL[\s\S]*tiene_dependencias_historicas/);
+  assert.match(deletionMigration, /FROM public\.auditoria_logs[\s\S]*registro_id = p_id::text/);
+  assert.match(deletionMigration, /IF v_historial THEN[\s\S]*SET estado_cliente='Inactivo'/);
+  assert.match(deletionMigration, /UPDATE public\.usuarios[\s\S]*SET activo=false/);
+  assert.match(deletionMigration, /'INACTIVAR'/);
 });
 
 test('DELETE físico queda detrás de todas las comprobaciones y conserva auditoría', () => {
-  const historyBranch = deletionMigration.indexOf('IF v_tiene_historial THEN');
-  const physicalDelete = deletionMigration.indexOf('DELETE FROM public.clientes');
+  const clientFunction = deletionMigration.match(/CREATE OR REPLACE FUNCTION public\.eliminar_cliente_seguro[\s\S]*?END; \$\$;/)[0];
+  const historyBranch = clientFunction.indexOf('IF v_historial THEN');
+  const physicalDelete = clientFunction.indexOf('DELETE FROM public.clientes');
   assert.ok(historyBranch > 0 && physicalDelete > historyBranch);
-  assert.match(deletionMigration, /Este camino solo se alcanza sin cuenta, FK, historial ni auditoría previa/);
-  assert.match(deletionMigration, /'BORRADO_FISICO'[\s\S]*DELETE FROM public\.clientes/);
-  assert.doesNotMatch(deletionMigration, /DELETE FROM public\.(?:membresias|pagos|resultados_wod|records_personales|progreso_fisico)/);
+  assert.match(clientFunction, /'DELETE_FISICO'[\s\S]*DELETE FROM public\.clientes/);
+  assert.doesNotMatch(clientFunction, /DELETE FROM public\.(?:membresias|pagos|resultados_wod|records_personales|progreso_fisico)/);
   assert.match(deletionMigration, /REVOKE ALL ON FUNCTION[\s\S]*GRANT EXECUTE[\s\S]*TO authenticated/);
 });
 
 test('el SQL preparado tiene preflight, postflight y dry-run reversible sin ejecución automática', () => {
   assert.match(deletionPreflight, /BEGIN TRANSACTION READ ONLY/);
-  assert.match(deletionPreflight, /has_table_privilege\('authenticated', 'public\.clientes', 'DELETE'\)/);
+  assert.match(deletionPreflight, /'clientes'[\s\S]*has_table_privilege\(v_role,'public\.' \|\| v_table,'DELETE'\)/);
+  assert.match(deletionPreflight, /RAISE NOTICE 'DELETE heredado detectado/);
+  assert.doesNotMatch(deletionPreflight, /RAISE EXCEPTION 'Existe DELETE directo incompatible/);
   assert.match(deletionPostflight, /BEGIN TRANSACTION READ ONLY/);
   assert.match(deletionPostflight, /has_function_privilege/);
+  assert.match(deletionPostflight, /RAISE EXCEPTION 'DELETE directo persiste/);
   assert.match(deletionRollback, /^\s*(?:--[^\r\n]*(?:\r?\n|$))*ROLLBACK;\s*$/);
   assert.match(deletionDryRun, /BEGIN;[\s\S]*\$migrationBody[\s\S]*\$postflightBody[\s\S]*\$rollback/);
 });

@@ -7,8 +7,8 @@ import { displayDate } from "@/lib/clientes/model";
 import { expenseCategories, moneyLabel, type ExpenseRow } from "@/lib/gastos/model";
 import ExpenseForm from "./expense-form";
 
-export default function ExpensesManager({ expenses, totalActive, query, category, from, to }: {
-  expenses: ExpenseRow[]; totalActive: number; query: string; category: string; from: string; to: string;
+export default function ExpensesManager({ expenses, totalActive, query, category, from, to, state }: {
+  expenses: ExpenseRow[]; totalActive: number; query: string; category: string; from: string; to: string; state: string;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -18,7 +18,7 @@ export default function ExpensesManager({ expenses, totalActive, query, category
   const newButton = useRef<HTMLButtonElement>(null);
 
   function annul(expense: ExpenseRow) {
-    if (!window.confirm("¿Anular este gasto? Se conservará en el historial y se excluirá de los totales.")) return;
+    if (!window.confirm("¿Está seguro de eliminar este gasto? La acción real será ANULAR; se conservará en el historial y se excluirá de los totales.")) return;
     setMessage(""); setError("");
     startTransition(async () => {
       const result = await voidExpense(expense.id);
@@ -31,9 +31,10 @@ export default function ExpensesManager({ expenses, totalActive, query, category
     <div className="flex flex-wrap items-start justify-between gap-4"><div><p className="eyebrow">Administración del box</p><h1 className="page-title mt-2">Gastos</h1><p className="mt-2 text-sm text-brand-secondary">Registro operativo sin eliminación física.</p></div><button ref={newButton} type="button" className="btn-primary" onClick={() => setForm(null)}>Nuevo gasto</button></div>
     <section className="mt-7 grid gap-4 lg:grid-cols-[18rem_minmax(0,1fr)]">
       <article className="panel p-5"><h2 className="text-sm font-medium text-brand-secondary">Total gastos activos</h2><p className="mt-4 text-3xl font-semibold tabular-nums">{moneyLabel(totalActive)}</p><p className="mt-2 text-xs text-brand-secondary">Según período y categoría aplicados.</p></article>
-      <form action="/gastos" className="panel grid items-end gap-4 p-4 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_12rem_10rem_10rem_auto]" role="search">
+      <form action="/gastos" className="panel grid items-end gap-4 p-4 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_12rem_9rem_10rem_10rem_auto]" role="search">
         <div><label className="field-label" htmlFor="expense-search">Buscar</label><input id="expense-search" name="q" type="search" className="field" defaultValue={query} placeholder="Descripción o proveedor" /></div>
         <div><label className="field-label" htmlFor="expense-category-filter">Categoría</label><select id="expense-category-filter" name="categoria" className="field" defaultValue={category}><option value="">Todas</option>{expenseCategories.map((item) => <option key={item}>{item}</option>)}</select></div>
+        <div><label className="field-label" htmlFor="expense-state-filter">Estado</label><select id="expense-state-filter" name="estado" className="field" defaultValue={state}><option value="">Todos</option><option value="ACTIVO">Activos</option><option value="ANULADO">Anulados</option></select></div>
         <div><label className="field-label" htmlFor="expense-from">Desde</label><input id="expense-from" name="desde" type="date" className="field" defaultValue={from} /></div>
         <div><label className="field-label" htmlFor="expense-to">Hasta</label><input id="expense-to" name="hasta" type="date" className="field" defaultValue={to} /></div>
         <button type="submit" className="btn-secondary">Filtrar</button>
@@ -49,7 +50,7 @@ export default function ExpensesManager({ expenses, totalActive, query, category
       <div className="border-t border-brand-border p-5"><dl className="grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4"><Metric label="Método de pago" value={expense.metodo_pago ?? "No indicado"} /><Metric label="Proveedor" value={expense.proveedor ?? "No indicado"} /><Metric label="Creado por" value={expense.created_by ?? "Registro histórico"} /><Metric label="Estado" value={expense.estado} /></dl>
         {expense.observacion && <p className="mt-4 rounded-xl bg-brand-bg p-4 text-sm"><span className="font-medium">Observación:</span> {expense.observacion}</p>}
         {expense.estado === "ANULADO" && <p className="mt-4 text-sm text-brand-secondary">Anulado {expense.anulado_at ? new Intl.DateTimeFormat("es-EC", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Guayaquil" }).format(new Date(expense.anulado_at)) : ""}.</p>}
-        {expense.estado === "ACTIVO" && <div className="mt-5 flex justify-end gap-3 border-t border-brand-border pt-4"><button type="button" className="btn-secondary" disabled={pending} onClick={() => setForm(expense)}>Editar</button><button type="button" className="btn-secondary text-red-700" disabled={pending} onClick={() => annul(expense)}>Anular</button></div>}
+        {expense.estado === "ACTIVO" && <div className="mt-5 flex justify-end gap-3 border-t border-brand-border pt-4"><button type="button" className="btn-secondary" disabled={pending} onClick={() => setForm(expense)}>Editar</button><button type="button" className="btn-secondary text-red-700" disabled={pending} onClick={() => annul(expense)}>Eliminar gasto</button></div>}
       </div>
     </details>)}</div>}
     {form !== undefined && <ExpenseForm expense={form} onClose={() => setForm(undefined)} onSaved={(notice) => { setForm(undefined); setMessage(notice); startTransition(() => router.refresh()); }} />}

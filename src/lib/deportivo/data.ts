@@ -31,6 +31,7 @@ export type ChallengeParticipant = {
 export type ManagedChallenge = {
   id: string; titulo: string; descripcion: string; fecha_inicio: string; fecha_fin: string;
   objetivo_numero: number; unidad: string; estado: ChallengeState; participantes: ChallengeParticipant[];
+  archivado: boolean;
 };
 
 export async function loadCoachSportOverview(access: CoachAccess) {

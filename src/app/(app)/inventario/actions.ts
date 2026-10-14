@@ -58,3 +58,19 @@ export async function resolveInventoryIncident(id: string, itemState?: string): 
     return { ok: false, message: "No fue posible resolver la incidencia." };
   }
 }
+
+export async function manageInventoryLifecycle(id: string, action: "ELIMINAR" | "RESTAURAR"): Promise<InventoryResult> {
+  try {
+    const access = await getInventoryAccess();
+    if (!access || !canManageInventory(access.role)) return { ok: false, message: "No tienes permiso para retirar inventario." };
+    if (!idSchema.safeParse(id).success) return { ok: false, message: "El item indicado no es válido." };
+    const { data, error } = await access.supabase.rpc("gestionar_inventario_seguro", { p_item_id: id, p_accion: action });
+    if (error || !data || typeof data !== "object") return { ok: false, message: "No fue posible completar el ciclo de vida del item." };
+    const mode = (data as { modo?: string }).modo;
+    revalidatePath("/inventario"); revalidatePath("/reportes");
+    return { ok: true, id, message: action === "RESTAURAR" ? "Item reactivado."
+      : mode === "FISICA" ? "El registro fue eliminado definitivamente." : "El item fue dado de baja y su historial se conserva." };
+  } catch {
+    return { ok: false, message: "No fue posible completar el ciclo de vida del item." };
+  }
+}

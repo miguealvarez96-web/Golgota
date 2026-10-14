@@ -60,3 +60,17 @@ export async function deleteClient(id: string): Promise<DeleteClientResult> {
     return { ok: false, message: "No fue posible completar la eliminación. Comprueba tu conexión e inténtalo de nuevo." };
   }
 }
+
+export async function restoreClient(id: string): Promise<DeleteClientResult> {
+  try {
+    if (!z.string().uuid().safeParse(id).success) return { ok: false, message: "El cliente indicado no es válido." };
+    const access = await getClientAccess();
+    if (!access || !canManageClients(access.role)) return { ok: false, message: "No tienes permiso para restaurar clientes." };
+    const { data, error } = await access.supabase.rpc("restaurar_cliente", { p_cliente_id: id });
+    if (error || !data) return { ok: false, message: "No fue posible restaurar el cliente." };
+    revalidatePath("/clientes"); revalidatePath("/");
+    return { ok: true, mode: "LOGICA", message: "Cliente reactivado correctamente." };
+  } catch {
+    return { ok: false, message: "No fue posible restaurar el cliente." };
+  }
+}

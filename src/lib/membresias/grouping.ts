@@ -1,5 +1,5 @@
 export type Vigency = "POR_INICIAR" | "VIGENTE" | "POR_VENCER" | "VENCE_HOY" | "VENCIDA";
-export type MembershipFilter = "" | "vigentes" | "por_vencer" | "vence_hoy" | "vencidas" | "por_iniciar";
+export type MembershipFilter = "" | "activas" | "vigentes" | "por_vencer" | "vence_hoy" | "vencidas" | "por_iniciar" | "canceladas";
 export type MembershipBase = { cliente_id: string; fecha_fin: string; estado_vigencia: string | null };
 export type FinancialMembership = MembershipBase & {
   id: string; plan_id: string; fecha_inicio: string; saldo: number; estado_pago: string;
@@ -65,12 +65,14 @@ export function groupByClient<T extends MembershipBase>(rows: T[], clients: Map<
 
 export function filterClientGroups<T extends MembershipBase>(groups: ClientMembershipGroup<T>[], query: string, filter: MembershipFilter) {
   const needle = query.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("es");
-  return groups.filter(({ client, overview }) => {
+  return groups.filter(({ client, overview, memberships }) => {
     const name = client.nombre_completo.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("es");
     if (needle && !name.includes(needle) && !client.cedula?.includes(query)) return false;
     if (!filter) return true;
+    if (filter === "canceladas") return memberships.some((row) => "estado_pago" in row && row.estado_pago === "CANCELADA");
     if (!overview) return false;
     const state = vigencyOf(overview);
+    if (filter === "activas") return ["VIGENTE", "POR_VENCER", "VENCE_HOY"].includes(state);
     if (filter === "vigentes") return state === "VIGENTE";
     if (filter === "por_vencer") return state === "POR_VENCER";
     if (filter === "vence_hoy") return state === "VENCE_HOY";

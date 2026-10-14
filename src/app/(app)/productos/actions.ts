@@ -119,3 +119,26 @@ export async function setProductActive(id: string, active: boolean): Promise<Sav
     return { ok: false, message: "No fue posible cambiar el estado del producto." };
   }
 }
+
+export async function manageProductLifecycle(id: string, action: "ELIMINAR" | "RESTAURAR"): Promise<SaveProductResult> {
+  try {
+    const access = await getProductAccess();
+    if (!access || !canManageProducts(access.role)) return { ok: false, message: "No tienes permiso para retirar productos." };
+    if (!productIdSchema.safeParse(id).success) return { ok: false, message: "El producto indicado no es válido." };
+    const { data, error } = await access.supabase.rpc("gestionar_producto_seguro", { p_producto_id: id, p_accion: action });
+    if (error || !data || typeof data !== "object") return { ok: false, message: "No fue posible completar el ciclo de vida del producto." };
+    const result = data as { modo?: string; imagen_path?: string | null };
+    let cleanupWarning = false;
+    if (result.modo === "FISICA" && result.imagen_path) {
+      const cleanup = await removeStoredImage(access, result.imagen_path);
+      cleanupWarning = Boolean(cleanup.error);
+    }
+    revalidatePath("/productos"); revalidatePath("/reportes");
+    if (action === "RESTAURAR") return { ok: true, id, message: "Producto reactivado." };
+    return { ok: true, id, message: cleanupWarning
+      ? "Producto eliminado definitivamente; la imagen quedó pendiente de limpieza en Storage."
+      : result.modo === "FISICA" ? "El registro fue eliminado definitivamente." : "El registro fue retirado de la operación y su historial se conserva." };
+  } catch {
+    return { ok: false, message: "No fue posible completar el ciclo de vida del producto." };
+  }
+}

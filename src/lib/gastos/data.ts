@@ -3,7 +3,7 @@ import type { getExpenseAccess } from "./access";
 import { expenseSearchFilter, type ExpenseRow } from "./model";
 
 type Database = NonNullable<Awaited<ReturnType<typeof getExpenseAccess>>>["supabase"];
-export type ExpenseFilters = { query: string; category: string; from: string; to: string };
+export type ExpenseFilters = { query: string; category: string; from: string; to: string; state: "" | "ACTIVO" | "ANULADO" };
 const batchSize = 500;
 
 export async function loadExpenses(supabase: Database, filters: ExpenseFilters) {
@@ -17,6 +17,7 @@ export async function loadExpenses(supabase: Database, filters: ExpenseFilters) 
     if (filters.category) request = request.eq("tipo_gasto", filters.category);
     if (filters.from) request = request.gte("fecha_gasto", filters.from);
     if (filters.to) request = request.lte("fecha_gasto", filters.to);
+    if (filters.state) request = request.eq("estado", filters.state);
     const { data, error } = await request;
     if (error) throw new Error("No se pudieron cargar los gastos.");
     rows.push(...(data ?? []) as ExpenseRow[]);

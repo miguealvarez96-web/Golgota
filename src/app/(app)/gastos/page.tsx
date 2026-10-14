@@ -6,7 +6,7 @@ import { expenseCategories } from "@/lib/gastos/model";
 import { validDateOnly } from "@/lib/reportes/model";
 
 export default async function GastosPage({ searchParams }: {
-  searchParams: { q?: string; categoria?: string; desde?: string; hasta?: string };
+  searchParams: { q?: string; categoria?: string; desde?: string; hasta?: string; estado?: string };
 }) {
   const access = await getExpenseAccess();
   if (!access) redirect("/");
@@ -14,9 +14,10 @@ export default async function GastosPage({ searchParams }: {
   const category = expenseCategories.find((item) => item === searchParams.categoria) ?? "";
   const from = typeof searchParams.desde === "string" && validDateOnly(searchParams.desde) ? searchParams.desde : "";
   const to = typeof searchParams.hasta === "string" && validDateOnly(searchParams.hasta) ? searchParams.hasta : "";
+  const state = searchParams.estado === "ACTIVO" || searchParams.estado === "ANULADO" ? searchParams.estado : "";
   try {
-    const data = await loadExpenses(access.supabase, { query, category, from, to });
-    return <ExpensesManager {...data} query={query} category={category} from={from} to={to} />;
+    const data = await loadExpenses(access.supabase, { query, category, from, to, state });
+    return <ExpensesManager {...data} query={query} category={category} from={from} to={to} state={state} />;
   } catch {
     return <main className="portal-page"><h1 className="page-title">Gastos</h1><div className="panel mt-6 p-6"><p role="alert" className="text-brand-secondary">No fue posible cargar los gastos. Si la migración está pendiente, aplícala después del dry-run.</p></div></main>;
   }

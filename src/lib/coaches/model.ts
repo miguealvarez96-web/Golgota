@@ -78,6 +78,7 @@ export type WodRow = {
   permite_resultados: boolean;
   limite_tiempo_minutos: number | null;
   publicado: boolean;
+  archivado: boolean;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -88,6 +89,7 @@ export type AnnouncementRow = {
   titulo: string;
   contenido: string;
   publicado: boolean;
+  archivado: boolean;
   fecha_publicacion: string | null;
   created_by: string;
   created_at: string;

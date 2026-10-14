@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { retryPaymentReceiptCleanup, reviewReportedPayment } from "@/app/(app)/pagos-reportados/actions";
+import { cancelPendingPaymentReport, retryPaymentReceiptCleanup, reviewReportedPayment } from "@/app/(app)/pagos-reportados/actions";
 import {
   filterAdminPaymentReports,
   moneyLabel,
@@ -17,6 +17,7 @@ const filters: { value: ReportFilter; label: string }[] = [
   { value: "PENDIENTE", label: "Pendientes" },
   { value: "APROBADO", label: "Aprobados" },
   { value: "RECHAZADO", label: "Rechazados" },
+  { value: "CANCELADO", label: "Cancelados" },
 ];
 
 export default function ReportedPaymentsManager({ reports }: { reports: AdminPaymentReport[] }) {
@@ -84,6 +85,15 @@ export default function ReportedPaymentsManager({ reports }: { reports: AdminPay
       activeReview.current = null;
       setActiveId(null);
     }
+  }
+
+  async function cancel(id: string) {
+    if (activeReview.current || !window.confirm("¿Cancelar este reporte pendiente creado por error? Se conservará la trazabilidad y no se creará ningún pago real.")) return;
+    activeReview.current = id; setActiveId(id); setMessage(""); setError("");
+    try {
+      const result = await cancelPendingPaymentReport(id);
+      if (result.ok) { setMessage(result.message); router.refresh(); } else setError(result.message);
+    } finally { activeReview.current = null; setActiveId(null); }
   }
 
   return <>
@@ -181,6 +191,9 @@ export default function ReportedPaymentsManager({ reports }: { reports: AdminPay
           {report.estado === "PENDIENTE" && !canApply && <p className="mt-4 text-sm text-amber-900">No puede aprobarse con el saldo o la membresía actuales. Puede rechazarse conservando la trazabilidad.</p>}
 
           {report.estado === "PENDIENTE" && <div className="mt-5 flex flex-wrap justify-end gap-3 border-t border-brand-border pt-4">
+            <button type="button" className="btn-secondary text-red-700" disabled={activeId !== null} onClick={() => cancel(report.id)}>
+              {activeId === report.id ? "Procesando…" : "Cancelar reporte"}
+            </button>
             <button type="button" className="btn-secondary" disabled={activeId !== null} onClick={() => review(report.id, "rechazar")}>
               {activeId === report.id ? "Procesando…" : "Rechazar"}
             </button>

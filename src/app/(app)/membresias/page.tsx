@@ -7,10 +7,10 @@ import { filterClientGroups, groupByClient, vigencyLabel, vigencyOf, type Client
 
 type Filters = { q?: string; filtro?: string; pagina?: string; cliente?: string };
 const pageSize = 20;
-const membershipFilters: MembershipFilter[] = ["", "vigentes", "por_vencer", "vence_hoy", "vencidas", "por_iniciar"];
+const membershipFilters: MembershipFilter[] = ["", "activas", "vigentes", "por_vencer", "vence_hoy", "vencidas", "por_iniciar", "canceladas"];
 const filterLabels: Record<MembershipFilter, string> = {
-  "": "Todos", vigentes: "Vigentes", por_vencer: "Por vencer",
-  vence_hoy: "Vence hoy", vencidas: "Vencidas", por_iniciar: "Por iniciar",
+  "": "Todas", activas: "Activas", vigentes: "Vigentes", por_vencer: "Por vencer",
+  vence_hoy: "Vence hoy", vencidas: "Vencidas", por_iniciar: "Por iniciar", canceladas: "Canceladas",
 };
 
 export default async function MembresiasPage({ searchParams }: { searchParams: Filters }) {

@@ -48,3 +48,18 @@ export async function registerPayment(input: unknown): Promise<MutationResult> {
     return { ok: true, id: value.membresia_id, message: "Pago registrado correctamente." };
   } catch { return failure(); }
 }
+
+export async function manageMembershipLifecycle(id: string, action: "ELIMINAR" | "RESTAURAR"): Promise<MutationResult> {
+  try {
+    if (!/^[0-9a-f-]{36}$/i.test(id)) return { ok: false, message: "La membresía indicada no es válida." };
+    const access = await getClientAccess();
+    if (!access || !canManageClients(access.role)) return { ok: false, message: "No tienes permiso para retirar membresías." };
+    const { data, error } = await access.supabase.rpc("gestionar_membresia_segura", { p_membresia_id: id, p_accion: action });
+    if (error?.code === "23P01") return { ok: false, message: "No puede restaurarse porque se solaparía con otra membresía." };
+    if (error || !data || typeof data !== "object") return failure(error?.code);
+    const mode = (data as { modo?: string }).modo;
+    revalidatePath("/membresias"); revalidatePath(`/membresias/${id}`); revalidatePath("/clientes"); revalidatePath("/");
+    return { ok: true, id, message: action === "RESTAURAR" ? "Membresía restaurada."
+      : mode === "FISICA" ? "La membresía fue eliminada definitivamente." : "La membresía fue cancelada y su historial se conserva." };
+  } catch { return failure(); }
+}

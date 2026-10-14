@@ -182,3 +182,24 @@ export async function resetInternalPassword(input: unknown): Promise<InternalUse
     return { ok: false, message: genericError };
   }
 }
+
+export async function removeInternalUser(id: string): Promise<InternalUserResult> {
+  try {
+    const access = await getInternalUsersAdminAccess();
+    if (!access) return { ok: false, message: "No tienes permiso para retirar usuarios internos." };
+    if (!/^[0-9a-f-]{36}$/i.test(id) || id === access.userId) return { ok: false, message: "El usuario indicado no es administrable." };
+    const target = await access.supabase.from("usuarios").select("id,rol,activo,login_username")
+      .eq("id", id).not("login_username", "is", null).single();
+    if (target.error || !target.data || !["owner", "staff"].includes(target.data.rol)) return { ok: false, message: "No se encontró una cuenta interna administrable." };
+    const admin = createAdminClient();
+    const banned = await admin.auth.admin.updateUserById(id, { ban_duration: "876000h" });
+    if (banned.error) return { ok: false, message: "No fue posible desactivar el acceso Auth." };
+    const retired = await access.supabase.rpc("retirar_usuario_interno", { p_usuario_id: id });
+    if (retired.error) {
+      if (target.data.activo) await admin.auth.admin.updateUserById(id, { ban_duration: "none" });
+      return { ok: false, message: "No fue posible retirar el usuario; el acceso Auth fue restaurado." };
+    }
+    revalidatePath("/usuarios");
+    return { ok: true, message: "Usuario retirado de la operación. Su historial y actoría se conservan." };
+  } catch { return { ok: false, message: genericError }; }
+}

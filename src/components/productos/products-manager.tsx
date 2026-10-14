@@ -3,7 +3,7 @@
 import { useRef, useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import PortalIcon from "@/components/layout/portal-icon";
-import { setProductActive } from "@/app/(app)/productos/actions";
+import { manageProductLifecycle } from "@/app/(app)/productos/actions";
 import { productMoneyLabel, type ProductRow } from "@/lib/productos/model";
 import ProductForm from "./product-form";
 
@@ -56,11 +56,14 @@ export default function ProductsManager({ products, categories, total, page, pag
     (opener.current?.isConnected ? opener.current : newButton.current)?.focus();
   }
 
-  function changeState(product: ProductRow) {
+  function lifecycle(product: ProductRow) {
+    const action = product.activo ? "ELIMINAR" : "RESTAURAR";
+    if (product.activo && !window.confirm("¿Está seguro de eliminar este registro? Si existe historial relacionado, se conservará y el producto será inactivado.")) return;
+    if (!product.activo && !window.confirm(`¿Restaurar ${product.nombre}?`)) return;
     setError("");
     setMessage("");
     startTransition(async () => {
-      const result = await setProductActive(product.id, !product.activo);
+      const result = await manageProductLifecycle(product.id, action);
       if (result.ok) { setMessage(result.message); router.refresh(); }
       else setError(result.message);
     });
@@ -101,7 +104,7 @@ export default function ProductsManager({ products, categories, total, page, pag
                 <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="text-xs font-medium uppercase tracking-[0.12em] text-brand-secondary">{product.categoria || "Sin categoría"}</p><h2 className="mt-1 break-words text-lg font-semibold text-brand-text">{product.nombre}</h2></div>{canManage && <ProductStatus active={product.activo} />}</div>
                 {product.descripcion && <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-brand-secondary">{product.descripcion}</p>}
                 <dl className="mt-auto grid grid-cols-2 gap-3 pt-5"><div><dt className="text-xs text-brand-secondary">Precio</dt><dd className="mt-1 text-lg font-semibold text-brand-text">{productMoneyLabel(Number(product.precio))}</dd></div><div><dt className="text-xs text-brand-secondary">Stock</dt><dd className="mt-1 text-lg font-semibold text-brand-text">{product.stock.toLocaleString("es-EC")}</dd></div></dl>
-                {canManage && <div className="mt-5 grid grid-cols-2 gap-2 border-t border-brand-border pt-4"><button type="button" className="btn-secondary" onClick={(event) => open(product, event.currentTarget)}>Editar</button><button type="button" className="btn-secondary" disabled={pending} onClick={() => changeState(product)}>{product.activo ? "Inactivar" : "Activar"}</button></div>}
+                {canManage && <div className="mt-5 grid grid-cols-2 gap-2 border-t border-brand-border pt-4"><button type="button" className="btn-secondary" onClick={(event) => open(product, event.currentTarget)}>Editar</button><button type="button" className={product.activo ? "btn-secondary text-red-700" : "btn-secondary"} disabled={pending} onClick={() => lifecycle(product)}>{product.activo ? "Eliminar" : "Restaurar"}</button></div>}
               </div>
             </article>)}
           </div>

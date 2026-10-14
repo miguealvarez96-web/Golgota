@@ -3,11 +3,11 @@
 import { useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
-import { createInternalUser, resetInternalPassword, updateInternalUser } from "@/app/(app)/usuarios/actions";
+import { createInternalUser, removeInternalUser, resetInternalPassword, updateInternalUser } from "@/app/(app)/usuarios/actions";
 import PortalIcon from "@/components/layout/portal-icon";
 import type { InternalRole, InternalUserRow } from "@/lib/usuarios-internos/model";
 
-export default function InternalUsersManager({ users, loadError }: { users: InternalUserRow[]; loadError: string }) {
+export default function InternalUsersManager({ users, loadError, state }: { users: InternalUserRow[]; loadError: string; state: string }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [creating, setCreating] = useState(false);
@@ -45,6 +45,10 @@ export default function InternalUsersManager({ users, loadError }: { users: Inte
       passwordConfirmation: data.get("passwordConfirmation"),
     })));
   }
+  function remove(user: InternalUserRow) {
+    if (!window.confirm(`¿Está seguro de eliminar a ${user.login_username}? La cuenta será desactivada y su historial se conservará.`)) return;
+    startTransition(async () => finish(await removeInternalUser(user.id)));
+  }
 
   return <main className="portal-page">
     <div className="flex flex-wrap items-center justify-between gap-4">
@@ -54,6 +58,7 @@ export default function InternalUsersManager({ users, loadError }: { users: Inte
 
     {message && <p role="status" className="mt-5 rounded-xl border border-brand-copper/40 bg-brand-copper/10 p-4 text-sm">{message}</p>}
     {error && <p role="alert" className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</p>}
+    <form action="/usuarios" className="panel mt-5 flex flex-wrap items-end gap-3 p-4"><div><label htmlFor="internal-user-state" className="field-label">Estado</label><select id="internal-user-state" name="estado" className="field" defaultValue={state}><option value="">Todos</option><option value="activo">Activos</option><option value="inactivo">Inactivos</option></select></div><button className="btn-secondary">Filtrar</button></form>
 
     <div className="mt-7 overflow-hidden rounded-2xl border border-brand-border bg-brand-surface">
       {!users.length ? <p className="p-8 text-center text-sm text-brand-secondary">Todavía no hay usuarios internos.</p> : <div className="overflow-x-auto"><table className="w-full min-w-[720px] text-left text-sm">
@@ -62,7 +67,7 @@ export default function InternalUsersManager({ users, loadError }: { users: Inte
           <td className="p-4 font-medium">{user.nombre}</td><td className="p-4 font-mono text-brand-secondary">{user.login_username}</td>
           <td className="p-4"><select aria-label={`Rol de ${user.login_username}`} className="field max-w-32" value={user.rol} disabled={pending} onChange={(event) => update(user, event.target.value as InternalRole, user.activo)}><option value="owner">Owner</option><option value="staff">Staff</option></select></td>
           <td className="p-4"><span className={user.activo ? "text-emerald-700" : "text-brand-secondary"}>{user.activo ? "Activo" : "Inactivo"}</span></td>
-          <td className="p-4"><div className="flex justify-end gap-2"><button type="button" className="btn-secondary" disabled={pending} onClick={() => setResetting(user)}>Contraseña</button><button type="button" className="btn-secondary" disabled={pending} onClick={() => update(user, user.rol, !user.activo)}>{user.activo ? "Inactivar" : "Activar"}</button></div></td>
+          <td className="p-4"><div className="flex justify-end gap-2"><button type="button" className="btn-secondary" disabled={pending} onClick={() => setResetting(user)}>Contraseña</button><button type="button" className="btn-secondary" disabled={pending} onClick={() => update(user, user.rol, !user.activo)}>{user.activo ? "Inactivar" : "Activar"}</button>{user.activo && <button type="button" className="btn-secondary text-red-700" disabled={pending} onClick={() => remove(user)}>Eliminar usuario</button>}</div></td>
         </tr>)}</tbody>
       </table></div>}
     </div>

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition, type FormEvent } from "react";
-import { deleteClient } from "@/app/(app)/clientes/actions";
+import { deleteClient, restoreClient } from "@/app/(app)/clientes/actions";
 import ClientForm from "./client-form";
 import PortalIcon from "@/components/layout/portal-icon";
 import VigencyBadge from "@/components/membresias/vigency-badge";
@@ -47,6 +47,15 @@ export default function ClientsManager({ clients, total, page, pageSize, query, 
       router.refresh();
     });
   }
+  function restore(client: ClientRow) {
+    if (!window.confirm(`¿Está seguro de reactivar a ${client.nombre_completo}?`)) return;
+    setMessage(""); setError("");
+    startTransition(async () => {
+      const result = await restoreClient(client.id);
+      if (!result.ok) { setError(result.message); return; }
+      setMessage(result.message); router.refresh();
+    });
+  }
   function membership(client: ClientListRow) {
     if (membershipError) return <span className="text-brand-secondary">No disponible</span>;
     const current = memberships[client.id];
@@ -58,6 +67,9 @@ export default function ClientsManager({ clients, total, page, pageSize, query, 
   }
   const editButton = (client: ClientRow) => <button type="button" className="btn-secondary" onClick={(event) => open(client, event.currentTarget)} aria-label={`Editar a ${client.nombre_completo}`}>Editar</button>;
   const deleteButton = (client: ClientRow) => <button type="button" className="inline-flex min-h-10 items-center justify-center rounded-xl border border-red-500/60 px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60" disabled={pending} onClick={() => remove(client)} aria-label={`Eliminar cliente ${client.nombre_completo}`}>Eliminar cliente</button>;
+  const lifecycleButton = (client: ClientRow) => client.estado_cliente === "Inactivo"
+    ? <button type="button" className="btn-secondary" disabled={pending} onClick={() => restore(client)}>Restaurar cliente</button>
+    : deleteButton(client);
   const hasPrivateDetails = (client: ClientListRow): client is ClientRow => "cedula" in client;
 
   return (
@@ -86,9 +98,9 @@ export default function ClientsManager({ clients, total, page, pageSize, query, 
             <div className="panel hidden overflow-hidden xl:block"><table className="w-full table-fixed text-left text-sm">
               <caption className="sr-only">Listado de clientes y estado de membresía</caption>
               <thead className="border-b border-brand-muted/30 bg-brand-bg/30 text-xs uppercase tracking-wider text-brand-secondary"><tr><th scope="col" className="w-1/4 p-4">Cliente</th>{canEdit && <th scope="col" className="p-4">Contacto</th>}<th scope="col" className="p-4">Estado</th><th scope="col" className="p-4">Membresía</th>{canEdit && <th scope="col" className="w-44 p-4"><span className="sr-only">Acciones</span></th>}</tr></thead>
-              <tbody className="divide-y divide-brand-muted/20">{clients.map((client) => <tr key={client.id} className="hover:bg-brand-bg/20"><td className="p-4 align-top"><p className="font-semibold">{client.nombre_completo}</p>{canEdit && hasPrivateDetails(client) && <p className="mt-1 text-xs text-brand-secondary">ID · {client.cedula}</p>}</td>{canEdit && hasPrivateDetails(client) && <td className="break-words p-4 align-top"><p>{client.celular || "Sin teléfono"}</p><p className="mt-1 text-xs text-brand-secondary">{client.email || "Sin correo"}</p></td>}<td className="p-4 align-top"><ClientStatus value={client.estado_cliente} />{canEdit && hasPrivateDetails(client) && <p className="mt-2 text-xs text-brand-secondary">{displayDate(client.fecha_registro)}</p>}</td><td className="p-4 align-top text-xs">{membership(client)}</td>{canEdit && hasPrivateDetails(client) && <td className="p-3 align-top"><div className="flex flex-col gap-2">{editButton(client)}{canDelete && deleteButton(client)}</div></td>}</tr>)}</tbody>
+              <tbody className="divide-y divide-brand-muted/20">{clients.map((client) => <tr key={client.id} className="hover:bg-brand-bg/20"><td className="p-4 align-top"><p className="font-semibold">{client.nombre_completo}</p>{canEdit && hasPrivateDetails(client) && <p className="mt-1 text-xs text-brand-secondary">ID · {client.cedula}</p>}</td>{canEdit && hasPrivateDetails(client) && <td className="break-words p-4 align-top"><p>{client.celular || "Sin teléfono"}</p><p className="mt-1 text-xs text-brand-secondary">{client.email || "Sin correo"}</p></td>}<td className="p-4 align-top"><ClientStatus value={client.estado_cliente} />{canEdit && hasPrivateDetails(client) && <p className="mt-2 text-xs text-brand-secondary">{displayDate(client.fecha_registro)}</p>}</td><td className="p-4 align-top text-xs">{membership(client)}</td>{canEdit && hasPrivateDetails(client) && <td className="p-3 align-top"><div className="flex flex-col gap-2">{editButton(client)}{canDelete && lifecycleButton(client)}</div></td>}</tr>)}</tbody>
             </table></div>
-            <div className="grid gap-4 md:grid-cols-2 xl:hidden">{clients.map((client) => <article key={client.id} className="panel min-w-0 p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0"><h2 className="font-semibold">{client.nombre_completo}</h2>{canEdit && hasPrivateDetails(client) && <p className="mt-1 text-xs text-brand-secondary">ID · {client.cedula}</p>}</div><ClientStatus value={client.estado_cliente} /></div><dl className="mt-5 space-y-3 text-sm">{canEdit && hasPrivateDetails(client) && <><div><dt className="text-xs text-brand-secondary">Teléfono</dt><dd className="mt-1">{client.celular || "Sin teléfono"}</dd></div><div><dt className="text-xs text-brand-secondary">Correo</dt><dd className="mt-1 break-words">{client.email || "Sin correo"}</dd></div><div><dt className="text-xs text-brand-secondary">Fecha de registro</dt><dd className="mt-1">{displayDate(client.fecha_registro)}</dd></div></>}<div><dt className="text-xs text-brand-secondary">Membresía actual</dt><dd className="mt-1">{membership(client)}</dd></div></dl>{canEdit && hasPrivateDetails(client) && <div className="mt-5 flex flex-wrap gap-2 border-t border-brand-muted/30 pt-4">{editButton(client)}{canDelete && deleteButton(client)}</div>}</article>)}</div>
+            <div className="grid gap-4 md:grid-cols-2 xl:hidden">{clients.map((client) => <article key={client.id} className="panel min-w-0 p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div className="min-w-0"><h2 className="font-semibold">{client.nombre_completo}</h2>{canEdit && hasPrivateDetails(client) && <p className="mt-1 text-xs text-brand-secondary">ID · {client.cedula}</p>}</div><ClientStatus value={client.estado_cliente} /></div><dl className="mt-5 space-y-3 text-sm">{canEdit && hasPrivateDetails(client) && <><div><dt className="text-xs text-brand-secondary">Teléfono</dt><dd className="mt-1">{client.celular || "Sin teléfono"}</dd></div><div><dt className="text-xs text-brand-secondary">Correo</dt><dd className="mt-1 break-words">{client.email || "Sin correo"}</dd></div><div><dt className="text-xs text-brand-secondary">Fecha de registro</dt><dd className="mt-1">{displayDate(client.fecha_registro)}</dd></div></>}<div><dt className="text-xs text-brand-secondary">Membresía actual</dt><dd className="mt-1">{membership(client)}</dd></div></dl>{canEdit && hasPrivateDetails(client) && <div className="mt-5 flex flex-wrap gap-2 border-t border-brand-muted/30 pt-4">{editButton(client)}{canDelete && lifecycleButton(client)}</div>}</article>)}</div>
           </>
         )}
       </div>

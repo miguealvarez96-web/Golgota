@@ -112,12 +112,13 @@ function ReportsHistory({ reports }: { reports: StudentPortal["reportes"] }) {
       {report.estado === "PENDIENTE" && <p className="mt-2 text-sm text-amber-900">Pendiente de verificación. Todavía no modifica tu saldo.</p>}
       {report.estado === "APROBADO" && <p className="mt-2 text-sm font-medium text-emerald-800">Pago aprobado y aplicado a tu membresía.</p>}
       {report.estado === "RECHAZADO" && report.motivo_rechazo && <p className="mt-2 text-sm text-red-700">Motivo: {report.motivo_rechazo}</p>}
+      {report.estado === "CANCELADO" && <p className="mt-2 text-sm text-brand-secondary">Reporte cancelado administrativamente; no modificó tu saldo.</p>}
       {report.reviewed_at && <p className="mt-1 text-xs text-brand-secondary">Revisado {reportDateTime(report.reviewed_at)}</p>}
     </li>)}</ol> : <p className="mt-5 text-sm text-brand-secondary">Todavía no has reportado pagos.</p>}
   </section>;
 }
 
-function ReportBadge({ state }: { state: "PENDIENTE" | "APROBADO" | "RECHAZADO" }) {
+function ReportBadge({ state }: { state: "PENDIENTE" | "APROBADO" | "RECHAZADO" | "CANCELADO" }) {
   const colors = state === "APROBADO" ? "border-emerald-200 bg-emerald-50 text-emerald-800"
     : state === "RECHAZADO" ? "border-red-200 bg-red-50 text-red-700"
       : "border-amber-200 bg-amber-50 text-amber-900";
